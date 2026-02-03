@@ -169,5 +169,22 @@ All return `ApiResponse<T>`: `{ success, data?, error? }`
 
 ---
 
+## ROADMAP
+
+See [ROADMAP.md](ROADMAP.md) for the full 6-phase roadmap (38 issues across 6 milestones).
+
+| Phase | Theme | Issues | Timeline |
+|-------|-------|--------|----------|
+| 1 | Hackathon Polish | 7 | Feb 5-12 |
+| 2 | Production Hardening | 7 | Feb-Mar |
+| 3 | Advanced Privacy | 7 | Mar-Apr |
+| 4 | Multi-Chain | 6 | Apr-Jun |
+| 5 | Backend Aggregation | 5 | Jun-Aug |
+| 6 | Enterprise | 6 | Aug-Dec |
+
+**Quick check:** `gh issue list -R sip-protocol/sipher --state open`
+
+---
+
 **Last Updated:** 2026-02-04
 **Status:** Hackathon Build Complete | Agent #274 Active | 39 Tests Passing
