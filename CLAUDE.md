@@ -66,6 +66,12 @@ pnpm dev                        # Dev server (localhost:5006)
 pnpm build                      # Build for production
 pnpm test -- --run              # Run tests (39 tests)
 pnpm typecheck                  # Type check
+pnpm colosseum heartbeat        # Autonomous loop (engage every 30 min)
+pnpm colosseum engage           # Single engagement cycle
+pnpm colosseum leaderboard      # Check vote leaderboard
+pnpm colosseum status           # Engagement stats
+pnpm colosseum posts            # List forum posts
+pnpm colosseum vote-all         # Vote for all projects
 ```
 
 ---
@@ -101,6 +107,8 @@ sipher/
 │   └── types/
 │       └── api.ts                  # ApiResponse<T>, HealthResponse
 ├── skill.md                        # OpenClaw skill file (GET /skill.md)
+├── scripts/
+│   └── colosseum.ts                # Hackathon engagement automation
 ├── tests/                          # 39 tests across 5 suites
 │   ├── health.test.ts              # 7 tests
 │   ├── stealth.test.ts             # 10 tests
