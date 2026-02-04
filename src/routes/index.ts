@@ -6,6 +6,7 @@ import transferRouter from './transfer.js'
 import scanRouter from './scan.js'
 import viewingKeyRouter from './viewing-key.js'
 import errorsRouter from './errors.js'
+import privacyRouter from './privacy.js'
 
 const router = Router()
 
@@ -16,5 +17,6 @@ router.use(transferRouter)
 router.use(scanRouter)
 router.use(viewingKeyRouter)
 router.use(errorsRouter)
+router.use(privacyRouter)
 
 export default router

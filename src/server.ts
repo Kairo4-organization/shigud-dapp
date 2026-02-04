@@ -95,6 +95,9 @@ app.get('/', (_req, res) => {
         disclose: 'POST /v1/viewing-key/disclose',
         decrypt: 'POST /v1/viewing-key/decrypt',
       },
+      privacy: {
+        score: 'POST /v1/privacy/score',
+      },
     },
     security: {
       authentication: isAuthEnabled() ? 'enabled' : 'disabled',

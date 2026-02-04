@@ -1132,6 +1132,78 @@ export const openApiSpec = {
         },
       },
     },
+
+    // ─── Privacy ─────────────────────────────────────────────────────────────
+    '/v1/privacy/score': {
+      post: {
+        summary: 'Analyze wallet privacy score',
+        description: 'Analyzes on-chain activity of a Solana wallet and returns a 0-100 privacy score with breakdown by factor and actionable recommendations.',
+        tags: ['Privacy'],
+        operationId: 'privacyScore',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  address: solanaAddress,
+                  limit: { type: 'integer', minimum: 10, maximum: 500, default: 100, description: 'Number of recent transactions to analyze' },
+                },
+                required: ['address'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Privacy score analysis',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        address: { type: 'string' },
+                        score: { type: 'integer', minimum: 0, maximum: 100 },
+                        grade: { type: 'string', enum: ['A', 'B', 'C', 'D', 'F'] },
+                        transactionsAnalyzed: { type: 'integer' },
+                        factors: {
+                          type: 'object',
+                          properties: {
+                            addressReuse: {
+                              type: 'object',
+                              properties: { score: { type: 'integer' }, detail: { type: 'string' } },
+                            },
+                            amountPatterns: {
+                              type: 'object',
+                              properties: { score: { type: 'integer' }, detail: { type: 'string' } },
+                            },
+                            timingCorrelation: {
+                              type: 'object',
+                              properties: { score: { type: 'integer' }, detail: { type: 'string' } },
+                            },
+                            counterpartyExposure: {
+                              type: 'object',
+                              properties: { score: { type: 'integer' }, detail: { type: 'string' } },
+                            },
+                          },
+                        },
+                        recommendations: { type: 'array', items: { type: 'string' } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Invalid address', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
   },
   tags: [
     { name: 'Health', description: 'Server health, readiness, and error catalog' },
@@ -1140,5 +1212,6 @@ export const openApiSpec = {
     { name: 'Scan', description: 'Scan for incoming shielded payments' },
     { name: 'Commitment', description: 'Pedersen commitment operations (create, verify, homomorphic add/subtract)' },
     { name: 'Viewing Key', description: 'Viewing key generation, encryption for disclosure, and decryption' },
+    { name: 'Privacy', description: 'Wallet privacy analysis and surveillance scoring' },
   ],
 }
