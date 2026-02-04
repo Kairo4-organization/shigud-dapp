@@ -4,7 +4,8 @@ import { env } from '../config.js'
 
 const API_KEYS = env.API_KEYS.split(',').filter(Boolean)
 const AUTH_ENABLED = env.API_KEYS.length > 0 && (env.isProduction || env.API_KEYS !== '')
-const SKIP_PATHS = ['/', '/skill.md', '/v1/health', '/v1/ready', '/v1/errors']
+const SKIP_PATHS = ['/', '/skill.md', '/v1/health', '/v1/ready', '/v1/errors', '/v1/openapi.json']
+const SKIP_PREFIXES = ['/docs']
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false
@@ -30,6 +31,7 @@ function extractApiKey(req: Request): string | null {
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   if (!AUTH_ENABLED || API_KEYS.length === 0) return next()
   if (SKIP_PATHS.includes(req.path)) return next()
+  if (SKIP_PREFIXES.some(p => req.path.startsWith(p))) return next()
 
   const apiKey = extractApiKey(req)
 

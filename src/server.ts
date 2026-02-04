@@ -4,6 +4,7 @@ import compression from 'compression'
 import { readFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import swaggerUi from 'swagger-ui-express'
 import { env, logConfigWarnings } from './config.js'
 import { logger, requestLogger } from './logger.js'
 import { setupGracefulShutdown } from './shutdown.js'
@@ -19,6 +20,7 @@ import {
   shutdownMiddleware,
 } from './middleware/index.js'
 import router from './routes/index.js'
+import { openApiSpec } from './openapi/spec.js'
 
 const app = express()
 
@@ -39,6 +41,17 @@ app.use(authenticate)
 app.use(express.json({ limit: '1mb' }))
 app.use(compression())
 app.use(requestLogger)
+
+// ─── OpenAPI / Swagger ─────────────────────────────────────────────────────
+
+app.get('/v1/openapi.json', (_req, res) => {
+  res.json(openApiSpec)
+})
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {
+  customSiteTitle: 'Sipher API Docs',
+  customCss: '.swagger-ui .topbar { display: none }',
+}))
 
 // ─── Root endpoint ──────────────────────────────────────────────────────────
 
