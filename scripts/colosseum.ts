@@ -34,7 +34,7 @@ const BASE_URL = 'https://agents.colosseum.com/api'
 const AGENT_ID = 274
 const PROJECT_ID = 148
 const PROJECT_SLUG = 'sipher-privacy-as-a-skill-for-solana-agents'
-const OUR_POST_IDS = [373, 374, 376, 498, 499, 500] // our own forum posts
+const OUR_POST_IDS = [373, 374, 376, 498, 499, 500, 504] // our own forum posts
 const STATE_FILE = resolve(__dirname, '.colosseum-state.json')
 const DRY_RUN = process.env.DRY_RUN === '1'
 const MAX_COMMENTS_PER_RUN = parseInt(process.env.MAX_COMMENTS || '15', 10)

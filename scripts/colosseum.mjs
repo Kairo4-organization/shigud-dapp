@@ -8,7 +8,7 @@ var __dirname = dirname(fileURLToPath(import.meta.url));
 var BASE_URL = "https://agents.colosseum.com/api";
 var AGENT_ID = 274;
 var PROJECT_ID = 148;
-var OUR_POST_IDS = [373, 374, 376, 498, 499, 500];
+var OUR_POST_IDS = [373, 374, 376, 498, 499, 500, 504];
 var STATE_FILE = resolve(__dirname, ".colosseum-state.json");
 var DRY_RUN = process.env.DRY_RUN === "1";
 var MAX_COMMENTS_PER_RUN = parseInt(process.env.MAX_COMMENTS || "15", 10);
