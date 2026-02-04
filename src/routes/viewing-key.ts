@@ -3,8 +3,10 @@ import { z } from 'zod'
 import {
   generateViewingKey,
   encryptForViewing,
+  decryptWithViewing,
 } from '@sip-protocol/sdk'
 import type { ViewingKey, TransactionData } from '@sip-protocol/sdk'
+import type { EncryptedTransaction } from '@sip-protocol/types'
 import { validateRequest } from '../middleware/validation.js'
 
 const router = Router()
@@ -83,6 +85,57 @@ router.post(
           ciphertext: encrypted.ciphertext,
           nonce: encrypted.nonce,
           viewingKeyHash: encrypted.viewingKeyHash,
+        },
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+// ─── Decrypt ────────────────────────────────────────────────────────────────
+
+const decryptSchema = z.object({
+  viewingKey: z.object({
+    key: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+    path: z.string(),
+    hash: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+  }),
+  encrypted: z.object({
+    ciphertext: z.string().regex(/^0x[0-9a-fA-F]+$/),
+    nonce: z.string().regex(/^0x[0-9a-fA-F]+$/),
+    viewingKeyHash: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+  }),
+})
+
+router.post(
+  '/viewing-key/decrypt',
+  validateRequest({ body: decryptSchema }),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { viewingKey, encrypted } = req.body
+
+      const vk: ViewingKey = {
+        key: viewingKey.key,
+        path: viewingKey.path,
+        hash: viewingKey.hash,
+      }
+
+      const enc: EncryptedTransaction = {
+        ciphertext: encrypted.ciphertext,
+        nonce: encrypted.nonce,
+        viewingKeyHash: encrypted.viewingKeyHash,
+      }
+
+      const decrypted = decryptWithViewing(enc, vk)
+
+      res.json({
+        success: true,
+        data: {
+          sender: decrypted.sender,
+          recipient: decrypted.recipient,
+          amount: decrypted.amount,
+          timestamp: decrypted.timestamp,
         },
       })
     } catch (err) {

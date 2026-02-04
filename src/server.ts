@@ -63,10 +63,13 @@ app.get('/', (_req, res) => {
       commitment: {
         create: 'POST /v1/commitment/create',
         verify: 'POST /v1/commitment/verify',
+        add: 'POST /v1/commitment/add',
+        subtract: 'POST /v1/commitment/subtract',
       },
       viewingKey: {
         generate: 'POST /v1/viewing-key/generate',
         disclose: 'POST /v1/viewing-key/disclose',
+        decrypt: 'POST /v1/viewing-key/decrypt',
       },
     },
     security: {

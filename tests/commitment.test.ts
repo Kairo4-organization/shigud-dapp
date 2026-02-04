@@ -128,3 +128,89 @@ describe('POST /v1/commitment/verify', () => {
     expect(res.body.error.code).toBe('VALIDATION_ERROR')
   })
 })
+
+describe('POST /v1/commitment/add', () => {
+  it('adds two commitments homomorphically', async () => {
+    const c1 = await request(app).post('/v1/commitment/create').send({ value: '500' })
+    const c2 = await request(app).post('/v1/commitment/create').send({ value: '300' })
+
+    const res = await request(app)
+      .post('/v1/commitment/add')
+      .send({
+        commitmentA: c1.body.data.commitment,
+        commitmentB: c2.body.data.commitment,
+        blindingA: c1.body.data.blindingFactor,
+        blindingB: c2.body.data.blindingFactor,
+      })
+
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.commitment).toMatch(/^0x[0-9a-f]+$/)
+    expect(res.body.data.blindingFactor).toMatch(/^0x[0-9a-f]{64}$/)
+
+    // Verify the sum commitment equals commit(800)
+    const verify = await request(app)
+      .post('/v1/commitment/verify')
+      .send({
+        commitment: res.body.data.commitment,
+        value: '800',
+        blindingFactor: res.body.data.blindingFactor,
+      })
+    expect(verify.body.data.valid).toBe(true)
+  })
+
+  it('rejects missing fields', async () => {
+    const res = await request(app)
+      .post('/v1/commitment/add')
+      .send({ commitmentA: '0x' + 'ab'.repeat(32) })
+    expect(res.status).toBe(400)
+    expect(res.body.error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('rejects empty body', async () => {
+    const res = await request(app).post('/v1/commitment/add').send({})
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('POST /v1/commitment/subtract', () => {
+  it('subtracts two commitments homomorphically', async () => {
+    const c1 = await request(app).post('/v1/commitment/create').send({ value: '1000' })
+    const c2 = await request(app).post('/v1/commitment/create').send({ value: '400' })
+
+    const res = await request(app)
+      .post('/v1/commitment/subtract')
+      .send({
+        commitmentA: c1.body.data.commitment,
+        commitmentB: c2.body.data.commitment,
+        blindingA: c1.body.data.blindingFactor,
+        blindingB: c2.body.data.blindingFactor,
+      })
+
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.commitment).toMatch(/^0x[0-9a-f]+$/)
+
+    // Verify the difference commitment equals commit(600)
+    const verify = await request(app)
+      .post('/v1/commitment/verify')
+      .send({
+        commitment: res.body.data.commitment,
+        value: '600',
+        blindingFactor: res.body.data.blindingFactor,
+      })
+    expect(verify.body.data.valid).toBe(true)
+  })
+
+  it('rejects invalid hex format', async () => {
+    const res = await request(app)
+      .post('/v1/commitment/subtract')
+      .send({
+        commitmentA: 'not-hex',
+        commitmentB: '0x' + 'ab'.repeat(32),
+        blindingA: '0x' + 'ab'.repeat(32),
+        blindingB: '0x' + 'ab'.repeat(32),
+      })
+    expect(res.status).toBe(400)
+  })
+})

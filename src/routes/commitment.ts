@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
-import { commit, verifyOpening } from '@sip-protocol/sdk'
+import { commit, verifyOpening, addCommitments, subtractCommitments, addBlindings, subtractBlindings } from '@sip-protocol/sdk'
 import type { HexString } from '@sip-protocol/types'
 import { validateRequest } from '../middleware/validation.js'
 import { hexToBytes } from '@noble/hashes/utils'
@@ -66,6 +66,73 @@ router.post(
       res.json({
         success: true,
         data: { valid },
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+// ─── Homomorphic Operations ──────────────────────────────────────────────────
+
+const homomorphicSchema = z.object({
+  commitmentA: z.string().regex(/^0x[0-9a-fA-F]+$/),
+  commitmentB: z.string().regex(/^0x[0-9a-fA-F]+$/),
+  blindingA: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+  blindingB: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+})
+
+router.post(
+  '/commitment/add',
+  validateRequest({ body: homomorphicSchema }),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { commitmentA, commitmentB, blindingA, blindingB } = req.body
+
+      const result = addCommitments(
+        commitmentA as HexString,
+        commitmentB as HexString
+      )
+      const combinedBlinding = addBlindings(
+        blindingA as HexString,
+        blindingB as HexString
+      )
+
+      res.json({
+        success: true,
+        data: {
+          commitment: result.commitment,
+          blindingFactor: combinedBlinding,
+        },
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.post(
+  '/commitment/subtract',
+  validateRequest({ body: homomorphicSchema }),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { commitmentA, commitmentB, blindingA, blindingB } = req.body
+
+      const result = subtractCommitments(
+        commitmentA as HexString,
+        commitmentB as HexString
+      )
+      const combinedBlinding = subtractBlindings(
+        blindingA as HexString,
+        blindingB as HexString
+      )
+
+      res.json({
+        success: true,
+        data: {
+          commitment: result.commitment,
+          blindingFactor: combinedBlinding,
+        },
       })
     } catch (err) {
       next(err)

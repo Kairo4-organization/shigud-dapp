@@ -17,7 +17,8 @@
     "test": "vitest",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "colosseum": "tsx scripts/colosseum.ts"
+    "colosseum": "tsx scripts/colosseum.ts",
+    "demo": "tsx scripts/demo-flow.ts"
   },
   "dependencies": {
     "@noble/curves": "^1.8.2",

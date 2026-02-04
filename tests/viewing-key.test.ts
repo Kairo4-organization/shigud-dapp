@@ -95,3 +95,98 @@ describe('POST /v1/viewing-key/disclose', () => {
     expect(res.body.error.code).toBe('VALIDATION_ERROR')
   })
 })
+
+describe('POST /v1/viewing-key/decrypt', () => {
+  it('decrypts previously encrypted transaction data', async () => {
+    const genRes = await request(app).post('/v1/viewing-key/generate').send({})
+    const vk = genRes.body.data
+
+    const txData = {
+      sender: 'AliceSolanaAddr',
+      recipient: 'BobStealthAddr',
+      amount: '1000000000',
+      timestamp: 1700000000,
+    }
+
+    const encRes = await request(app)
+      .post('/v1/viewing-key/disclose')
+      .send({ viewingKey: vk, transactionData: txData })
+
+    const decRes = await request(app)
+      .post('/v1/viewing-key/decrypt')
+      .send({
+        viewingKey: vk,
+        encrypted: {
+          ciphertext: encRes.body.data.ciphertext,
+          nonce: encRes.body.data.nonce,
+          viewingKeyHash: encRes.body.data.viewingKeyHash,
+        },
+      })
+
+    expect(decRes.status).toBe(200)
+    expect(decRes.body.success).toBe(true)
+    expect(decRes.body.data.sender).toBe(txData.sender)
+    expect(decRes.body.data.recipient).toBe(txData.recipient)
+    expect(decRes.body.data.amount).toBe(txData.amount)
+    expect(decRes.body.data.timestamp).toBe(txData.timestamp)
+  })
+
+  it('fails with wrong viewing key', async () => {
+    const vk1Res = await request(app).post('/v1/viewing-key/generate').send({})
+    const vk2Res = await request(app).post('/v1/viewing-key/generate').send({})
+    const vk1 = vk1Res.body.data
+    const vk2 = vk2Res.body.data
+
+    const encRes = await request(app)
+      .post('/v1/viewing-key/disclose')
+      .send({
+        viewingKey: vk1,
+        transactionData: {
+          sender: 'Alice',
+          recipient: 'Bob',
+          amount: '100',
+          timestamp: 1700000000,
+        },
+      })
+
+    const decRes = await request(app)
+      .post('/v1/viewing-key/decrypt')
+      .send({
+        viewingKey: vk2,
+        encrypted: {
+          ciphertext: encRes.body.data.ciphertext,
+          nonce: encRes.body.data.nonce,
+          viewingKeyHash: encRes.body.data.viewingKeyHash,
+        },
+      })
+
+    // Should fail (500) because wrong key can't decrypt
+    expect(decRes.status).toBeGreaterThanOrEqual(400)
+    expect(decRes.body.success).toBe(false)
+  })
+
+  it('validates schema', async () => {
+    const res = await request(app)
+      .post('/v1/viewing-key/decrypt')
+      .send({})
+    expect(res.status).toBe(400)
+    expect(res.body.error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('rejects invalid ciphertext format', async () => {
+    const genRes = await request(app).post('/v1/viewing-key/generate').send({})
+    const vk = genRes.body.data
+
+    const res = await request(app)
+      .post('/v1/viewing-key/decrypt')
+      .send({
+        viewingKey: vk,
+        encrypted: {
+          ciphertext: 'not-hex',
+          nonce: '0x' + 'ab'.repeat(12),
+          viewingKeyHash: vk.hash,
+        },
+      })
+    expect(res.status).toBe(400)
+  })
+})
