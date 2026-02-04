@@ -17,6 +17,7 @@ import {
   requestIdMiddleware,
   errorHandler,
   notFoundHandler,
+  auditLog,
   shutdownMiddleware,
 } from './middleware/index.js'
 import router from './routes/index.js'
@@ -41,6 +42,7 @@ app.use(authenticate)
 app.use(express.json({ limit: '1mb' }))
 app.use(compression())
 app.use(requestLogger)
+app.use(auditLog)
 
 // ─── OpenAPI / Swagger ─────────────────────────────────────────────────────
 
