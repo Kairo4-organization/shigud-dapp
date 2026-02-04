@@ -14,7 +14,14 @@ const router = Router()
 
 const hexString = z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'Must be a 0x-prefixed 32-byte hex string')
 
+const BATCH_MAX = 100
+
 const generateSchema = z.object({
+  label: z.string().optional(),
+})
+
+const batchGenerateSchema = z.object({
+  count: z.number().int().min(1).max(BATCH_MAX),
   label: z.string().optional(),
 })
 
@@ -111,6 +118,59 @@ router.post(
       res.json({
         success: true,
         data: { isOwner },
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+// ─── Batch ──────────────────────────────────────────────────────────────────
+
+router.post(
+  '/stealth/generate/batch',
+  validateRequest({ body: batchGenerateSchema }),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { count, label } = req.body
+
+      const results: Array<{
+        index: number
+        success: boolean
+        data?: any
+        error?: string
+      }> = []
+
+      for (let i = 0; i < count; i++) {
+        try {
+          const result = generateEd25519StealthMetaAddress('solana', label)
+          results.push({
+            index: i,
+            success: true,
+            data: {
+              metaAddress: result.metaAddress,
+              spendingPrivateKey: result.spendingPrivateKey,
+              viewingPrivateKey: result.viewingPrivateKey,
+            },
+          })
+        } catch (err: any) {
+          results.push({
+            index: i,
+            success: false,
+            error: err.message || 'Generation failed',
+          })
+        }
+      }
+
+      const succeeded = results.filter(r => r.success).length
+      const failed = results.filter(r => !r.success).length
+
+      res.json({
+        success: true,
+        data: {
+          results,
+          summary: { total: count, succeeded, failed },
+        },
       })
     } catch (err) {
       next(err)

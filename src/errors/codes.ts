@@ -31,6 +31,13 @@ export enum ErrorCode {
   ENCRYPTION_FAILED = 'ENCRYPTION_FAILED',
   DECRYPTION_FAILED = 'DECRYPTION_FAILED',
 
+  // 422 — Unprocessable Entity
+  BATCH_LIMIT_EXCEEDED = 'BATCH_LIMIT_EXCEEDED',
+  BATCH_EMPTY = 'BATCH_EMPTY',
+
+  // 500 — Privacy scoring
+  PRIVACY_SCORE_FAILED = 'PRIVACY_SCORE_FAILED',
+
   // 503 — Service Unavailable
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
   SOLANA_RPC_UNAVAILABLE = 'SOLANA_RPC_UNAVAILABLE',
@@ -160,6 +167,28 @@ export const ERROR_CATALOG: ErrorCatalogEntry[] = [
     httpStatus: 500,
     description: 'Decryption with viewing key failed. Verify the key matches the ciphertext.',
     retryable: false,
+  },
+
+  // 422
+  {
+    code: ErrorCode.BATCH_LIMIT_EXCEEDED,
+    httpStatus: 422,
+    description: 'Batch size exceeds the maximum of 100 items per request.',
+    retryable: false,
+  },
+  {
+    code: ErrorCode.BATCH_EMPTY,
+    httpStatus: 422,
+    description: 'Batch request must contain at least one item.',
+    retryable: false,
+  },
+
+  // 500 — Privacy scoring
+  {
+    code: ErrorCode.PRIVACY_SCORE_FAILED,
+    httpStatus: 500,
+    description: 'Privacy score analysis failed. The Solana RPC may be temporarily unavailable.',
+    retryable: true,
   },
 
   // 503

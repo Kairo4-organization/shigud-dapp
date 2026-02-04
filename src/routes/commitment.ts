@@ -8,6 +8,8 @@ import { hexToBytes } from '@noble/hashes/utils'
 
 const router = Router()
 
+const BATCH_MAX = 100
+
 // ─── Schemas ────────────────────────────────────────────────────────────────
 
 const createSchema = z.object({
@@ -68,6 +70,76 @@ router.post(
       res.json({
         success: true,
         data: { valid },
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+// ─── Batch ──────────────────────────────────────────────────────────────────
+
+const batchCreateSchema = z.object({
+  items: z.array(
+    z.object({
+      value: z.string().regex(/^[0-9]+$/, 'Must be a non-negative integer string'),
+      blindingFactor: z.string().regex(/^0x[0-9a-fA-F]{64}$/).optional(),
+    })
+  ).min(1).max(BATCH_MAX),
+})
+
+router.post(
+  '/commitment/create/batch',
+  validateRequest({ body: batchCreateSchema }),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { items } = req.body
+
+      const results: Array<{
+        index: number
+        success: boolean
+        data?: { commitment: string; blindingFactor: string }
+        error?: string
+      }> = []
+
+      for (let i = 0; i < items.length; i++) {
+        try {
+          const { value, blindingFactor } = items[i]
+          const valueBigInt = BigInt(value)
+
+          let blinding: Uint8Array | undefined
+          if (blindingFactor) {
+            blinding = hexToBytes(blindingFactor.slice(2))
+          }
+
+          const result = commit(valueBigInt, blinding)
+
+          results.push({
+            index: i,
+            success: true,
+            data: {
+              commitment: result.commitment as string,
+              blindingFactor: result.blinding as string,
+            },
+          })
+        } catch (err: any) {
+          results.push({
+            index: i,
+            success: false,
+            error: err.message || 'Commitment failed',
+          })
+        }
+      }
+
+      const succeeded = results.filter(r => r.success).length
+      const failed = results.filter(r => !r.success).length
+
+      res.json({
+        success: true,
+        data: {
+          results,
+          summary: { total: items.length, succeeded, failed },
+        },
       })
     } catch (err) {
       next(err)

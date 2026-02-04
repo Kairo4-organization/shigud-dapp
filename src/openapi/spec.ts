@@ -377,6 +377,78 @@ export const openApiSpec = {
       },
     },
 
+    '/v1/stealth/generate/batch': {
+      post: {
+        summary: 'Batch generate stealth keypairs',
+        description: 'Generate multiple stealth meta-address keypairs in a single call. Max 100 per request.',
+        tags: ['Stealth'],
+        operationId: 'stealthGenerateBatch',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  count: { type: 'integer', minimum: 1, maximum: 100, description: 'Number of keypairs to generate' },
+                  label: { type: 'string', description: 'Optional label applied to all keypairs' },
+                },
+                required: ['count'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Batch generation results',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        results: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              index: { type: 'integer' },
+                              success: { type: 'boolean' },
+                              data: {
+                                type: 'object',
+                                properties: {
+                                  metaAddress: { $ref: '#/components/schemas/StealthMetaAddress' },
+                                  spendingPrivateKey: hexString32,
+                                  viewingPrivateKey: hexString32,
+                                },
+                              },
+                              error: { type: 'string' },
+                            },
+                          },
+                        },
+                        summary: {
+                          type: 'object',
+                          properties: {
+                            total: { type: 'integer' },
+                            succeeded: { type: 'integer' },
+                            failed: { type: 'integer' },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Validation error', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
+
     // ─── Transfer ─────────────────────────────────────────────────────────────
     '/v1/transfer/shield': {
       post: {
@@ -726,6 +798,175 @@ export const openApiSpec = {
                       properties: {
                         commitment: { type: 'string' },
                         blindingFactor: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Validation error', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
+
+    '/v1/commitment/create/batch': {
+      post: {
+        summary: 'Batch create Pedersen commitments',
+        description: 'Create multiple Pedersen commitments in a single call. Max 100 per request.',
+        tags: ['Commitment'],
+        operationId: 'commitmentCreateBatch',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  items: {
+                    type: 'array',
+                    minItems: 1,
+                    maxItems: 100,
+                    items: {
+                      type: 'object',
+                      properties: {
+                        value: { type: 'string', pattern: '^[0-9]+$' },
+                        blindingFactor: hexString32,
+                      },
+                      required: ['value'],
+                    },
+                  },
+                },
+                required: ['items'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Batch commitment results',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        results: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              index: { type: 'integer' },
+                              success: { type: 'boolean' },
+                              data: {
+                                type: 'object',
+                                properties: {
+                                  commitment: { type: 'string' },
+                                  blindingFactor: { type: 'string' },
+                                },
+                              },
+                              error: { type: 'string' },
+                            },
+                          },
+                        },
+                        summary: {
+                          type: 'object',
+                          properties: {
+                            total: { type: 'integer' },
+                            succeeded: { type: 'integer' },
+                            failed: { type: 'integer' },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Validation error', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
+
+    '/v1/scan/payments/batch': {
+      post: {
+        summary: 'Batch scan for payments across multiple key pairs',
+        description: 'Scan for incoming shielded payments across multiple viewing key pairs. Max 100 key pairs per request.',
+        tags: ['Scan'],
+        operationId: 'scanPaymentsBatch',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  keyPairs: {
+                    type: 'array',
+                    minItems: 1,
+                    maxItems: 100,
+                    items: {
+                      type: 'object',
+                      properties: {
+                        viewingPrivateKey: hexString32,
+                        spendingPublicKey: hexString32,
+                        label: { type: 'string' },
+                      },
+                      required: ['viewingPrivateKey', 'spendingPublicKey'],
+                    },
+                  },
+                  fromSlot: { type: 'integer', minimum: 0 },
+                  toSlot: { type: 'integer', minimum: 0 },
+                  limit: { type: 'integer', minimum: 1, maximum: 1000, default: 100 },
+                },
+                required: ['keyPairs'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Batch scan results',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        results: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              index: { type: 'integer' },
+                              label: { type: 'string' },
+                              success: { type: 'boolean' },
+                              data: {
+                                type: 'object',
+                                properties: {
+                                  payments: { type: 'array', items: { type: 'object' } },
+                                  scanned: { type: 'integer' },
+                                },
+                              },
+                              error: { type: 'string' },
+                            },
+                          },
+                        },
+                        summary: {
+                          type: 'object',
+                          properties: {
+                            totalKeyPairs: { type: 'integer' },
+                            totalPaymentsFound: { type: 'integer' },
+                            transactionsScanned: { type: 'integer' },
+                          },
+                        },
                       },
                     },
                   },

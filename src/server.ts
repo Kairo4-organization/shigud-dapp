@@ -73,17 +73,22 @@ app.get('/', (_req, res) => {
         generate: 'POST /v1/stealth/generate',
         derive: 'POST /v1/stealth/derive',
         check: 'POST /v1/stealth/check',
+        generateBatch: 'POST /v1/stealth/generate/batch',
       },
       transfer: {
         shield: 'POST /v1/transfer/shield',
         claim: 'POST /v1/transfer/claim',
       },
-      scan: 'POST /v1/scan/payments',
+      scan: {
+        payments: 'POST /v1/scan/payments',
+        paymentsBatch: 'POST /v1/scan/payments/batch',
+      },
       commitment: {
         create: 'POST /v1/commitment/create',
         verify: 'POST /v1/commitment/verify',
         add: 'POST /v1/commitment/add',
         subtract: 'POST /v1/commitment/subtract',
+        createBatch: 'POST /v1/commitment/create/batch',
       },
       viewingKey: {
         generate: 'POST /v1/viewing-key/generate',

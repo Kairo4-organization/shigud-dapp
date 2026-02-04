@@ -10,6 +10,7 @@ import { bytesToHex } from '@noble/hashes/utils'
 const router = Router()
 
 const SIP_MEMO_PREFIX = 'SIP:'
+const BATCH_MAX = 100
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
 
@@ -124,6 +125,159 @@ router.post(
         data: {
           payments: results,
           scanned: filtered.length,
+        },
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+// ─── Batch Scan ─────────────────────────────────────────────────────────────
+
+const batchScanSchema = z.object({
+  keyPairs: z.array(
+    z.object({
+      viewingPrivateKey: hexString,
+      spendingPublicKey: hexString,
+      label: z.string().optional(),
+    })
+  ).min(1).max(BATCH_MAX),
+  fromSlot: z.number().int().min(0).optional(),
+  toSlot: z.number().int().min(0).optional(),
+  limit: z.number().int().min(1).max(1000).default(100),
+})
+
+router.post(
+  '/scan/payments/batch',
+  validateRequest({ body: batchScanSchema }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { keyPairs, fromSlot, toSlot, limit } = req.body
+      const connection = getConnection()
+
+      const memoProgram = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr')
+
+      const signatures = await connection.getSignaturesForAddress(memoProgram, {
+        limit,
+        minContextSlot: fromSlot,
+      })
+
+      const filtered = toSlot
+        ? signatures.filter((s: any) => s.slot <= toSlot)
+        : signatures
+
+      const keyPairResults: Array<{
+        index: number
+        label?: string
+        success: boolean
+        data?: { payments: any[]; scanned: number }
+        error?: string
+      }> = []
+
+      for (let kpIdx = 0; kpIdx < keyPairs.length; kpIdx++) {
+        const kp = keyPairs[kpIdx]
+        try {
+          const payments: Array<{
+            stealthAddress: string
+            ephemeralPublicKey: string
+            txSignature: string
+            slot: number
+            timestamp: number
+          }> = []
+
+          for (const sigInfo of filtered) {
+            try {
+              const tx = await connection.getTransaction(sigInfo.signature, {
+                maxSupportedTransactionVersion: 0,
+              })
+
+              if (!tx?.meta?.logMessages) continue
+
+              for (const log of tx.meta.logMessages) {
+                if (!log.includes(SIP_MEMO_PREFIX)) continue
+
+                const memoMatch = log.match(/Program log: (.+)/)
+                if (!memoMatch) continue
+
+                const parts = memoMatch[1].replace(SIP_MEMO_PREFIX, '').split(':')
+                if (parts.length < 3) continue
+
+                const [ephemeralB58, viewTagHex, stealthB58] = parts
+
+                let ephemeralHex: HexString
+                let stealthHex: HexString
+                try {
+                  const ephPubkey = new PublicKey(ephemeralB58)
+                  const stPubkey = new PublicKey(stealthB58)
+                  ephemeralHex = `0x${bytesToHex(ephPubkey.toBytes())}` as HexString
+                  stealthHex = `0x${bytesToHex(stPubkey.toBytes())}` as HexString
+                } catch {
+                  continue
+                }
+
+                const viewTagNumber = parseInt(viewTagHex, 16)
+                if (isNaN(viewTagNumber) || viewTagNumber < 0 || viewTagNumber > 255) continue
+
+                const stealthAddressObj: StealthAddress = {
+                  address: stealthHex,
+                  ephemeralPublicKey: ephemeralHex,
+                  viewTag: viewTagNumber,
+                }
+
+                let isOurs = false
+                try {
+                  isOurs = checkEd25519StealthAddress(
+                    stealthAddressObj,
+                    kp.viewingPrivateKey as HexString,
+                    kp.spendingPublicKey as HexString
+                  )
+                } catch {
+                  continue
+                }
+
+                if (isOurs) {
+                  payments.push({
+                    stealthAddress: stealthB58,
+                    ephemeralPublicKey: ephemeralB58,
+                    txSignature: sigInfo.signature,
+                    slot: sigInfo.slot,
+                    timestamp: sigInfo.blockTime || 0,
+                  })
+                }
+              }
+            } catch {
+              // Skip failed tx parsing
+            }
+          }
+
+          keyPairResults.push({
+            index: kpIdx,
+            label: kp.label,
+            success: true,
+            data: { payments, scanned: filtered.length },
+          })
+        } catch (err: any) {
+          keyPairResults.push({
+            index: kpIdx,
+            label: kp.label,
+            success: false,
+            error: err.message || 'Scan failed',
+          })
+        }
+      }
+
+      const totalPayments = keyPairResults.reduce((sum, r) => sum + (r.data?.payments.length || 0), 0)
+
+      res.json({
+        success: true,
+        data: {
+          results: keyPairResults,
+          summary: {
+            totalKeyPairs: keyPairs.length,
+            totalPaymentsFound: totalPayments,
+            transactionsScanned: filtered.length,
+          },
         },
       })
     } catch (err) {
