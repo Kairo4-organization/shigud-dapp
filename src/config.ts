@@ -13,6 +13,7 @@ export const env = cleanEnv(process.env, {
   }),
   RPC_PROVIDER_API_KEY: str({ default: '' }),
   API_KEYS: str({ default: '' }),
+  ADMIN_API_KEY: str({ default: '' }),
   CORS_ORIGINS: str({ default: '' }),
   RATE_LIMIT_MAX: num({ default: 100 }),
   RATE_LIMIT_WINDOW_MS: num({ default: 60000 }),

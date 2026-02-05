@@ -1,4 +1,4 @@
-export { authenticate, isAuthEnabled } from './auth.js'
+export { authenticate, isAuthEnabled, adminAuth } from './auth.js'
 export { secureCors, getCorsConfig } from './cors.js'
 export { rateLimiter } from './rate-limit.js'
 export { requestIdMiddleware } from './request-id.js'

@@ -6,3 +6,4 @@ dist/
 coverage/
 scripts/.colosseum-state.json
 scripts/.sipher-agent-state.json
+data/

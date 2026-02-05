@@ -118,10 +118,17 @@ app.get('/', (_req, res) => {
         unwrap: 'POST /v1/cspl/unwrap',
         transfer: 'POST /v1/cspl/transfer',
       },
+      admin: {
+        listKeys: 'GET /v1/admin/keys',
+        createKey: 'POST /v1/admin/keys',
+        getKey: 'GET /v1/admin/keys/:id',
+        revokeKey: 'DELETE /v1/admin/keys/:id',
+        listTiers: 'GET /v1/admin/tiers',
+      },
     },
     security: {
       authentication: isAuthEnabled() ? 'enabled' : 'disabled',
-      rateLimit: 'enabled',
+      rateLimit: 'tiered (free: 100/hr, pro: 10K/hr, enterprise: 100K/hr)',
     },
   })
 })

@@ -1,9 +1,17 @@
 import { Request, Response, NextFunction } from 'express'
 import { timingSafeEqual } from 'crypto'
 import { env } from '../config.js'
+import {
+  validateApiKey,
+  isEndpointAllowed,
+  initApiKeyService,
+} from '../services/api-keys.js'
+import type { ApiKeyTier } from '../types/api-key.js'
 
-const API_KEYS = env.API_KEYS.split(',').filter(Boolean)
-const AUTH_ENABLED = env.API_KEYS.length > 0 && (env.isProduction || env.API_KEYS !== '')
+// Legacy API keys from env (backwards compatible)
+const LEGACY_API_KEYS = env.API_KEYS.split(',').filter(Boolean)
+const AUTH_ENABLED = env.API_KEYS.length > 0 || env.isProduction
+
 const SKIP_PATHS = ['/', '/skill.md', '/v1/health', '/v1/ready', '/v1/errors', '/v1/openapi.json']
 const SKIP_PREFIXES = ['/docs']
 
@@ -16,8 +24,8 @@ function safeCompare(a: string, b: string): boolean {
   }
 }
 
-function isValidApiKey(key: string): boolean {
-  return API_KEYS.some(valid => safeCompare(key, valid))
+function isLegacyApiKey(key: string): boolean {
+  return LEGACY_API_KEYS.some(valid => safeCompare(key, valid))
 }
 
 function extractApiKey(req: Request): string | null {
@@ -29,9 +37,18 @@ function extractApiKey(req: Request): string | null {
 }
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
-  if (!AUTH_ENABLED || API_KEYS.length === 0) return next()
+  // Initialize key service
+  initApiKeyService()
+
+  // Skip auth for public paths
   if (SKIP_PATHS.includes(req.path)) return next()
   if (SKIP_PREFIXES.some(p => req.path.startsWith(p))) return next()
+
+  // If no auth configured, allow all (dev mode)
+  if (!AUTH_ENABLED && LEGACY_API_KEYS.length === 0) {
+    req.apiKeyTier = 'enterprise' // Dev mode gets full access
+    return next()
+  }
 
   const apiKey = extractApiKey(req)
 
@@ -46,17 +63,63 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     return
   }
 
-  if (!isValidApiKey(apiKey)) {
+  // Try new tiered key system first
+  const keyConfig = validateApiKey(apiKey)
+  if (keyConfig) {
+    // Check endpoint access for tier
+    if (!isEndpointAllowed(keyConfig.tier, req.path)) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'TIER_ACCESS_DENIED',
+          message: `Endpoint ${req.path} not available on ${keyConfig.tier} tier. Upgrade to pro or enterprise.`,
+        },
+      })
+      return
+    }
+
+    req.apiKey = keyConfig
+    req.apiKeyTier = keyConfig.tier
+    return next()
+  }
+
+  // Fallback to legacy API keys (treated as enterprise tier)
+  if (isLegacyApiKey(apiKey)) {
+    req.apiKeyTier = 'enterprise' as ApiKeyTier
+    return next()
+  }
+
+  res.status(401).json({
+    success: false,
+    error: { code: 'INVALID_API_KEY', message: 'Invalid API key' },
+  })
+}
+
+export function isAuthEnabled(): boolean {
+  return AUTH_ENABLED || LEGACY_API_KEYS.length > 0
+}
+
+// Admin auth - requires admin key from env
+const ADMIN_KEY = env.ADMIN_API_KEY
+
+export function adminAuth(req: Request, res: Response, next: NextFunction) {
+  if (!ADMIN_KEY) {
+    res.status(503).json({
+      success: false,
+      error: { code: 'ADMIN_DISABLED', message: 'Admin API not configured' },
+    })
+    return
+  }
+
+  const apiKey = extractApiKey(req)
+
+  if (!apiKey || !safeCompare(apiKey, ADMIN_KEY)) {
     res.status(401).json({
       success: false,
-      error: { code: 'INVALID_API_KEY', message: 'Invalid API key' },
+      error: { code: 'ADMIN_UNAUTHORIZED', message: 'Admin API key required' },
     })
     return
   }
 
   next()
-}
-
-export function isAuthEnabled(): boolean {
-  return AUTH_ENABLED && API_KEYS.length > 0
 }
