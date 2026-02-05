@@ -198,8 +198,13 @@ interface GitHubKnowledge {
 }
 
 const KNOWLEDGE_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+const BLOG_CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours (blog updates less frequently)
 const GITHUB_OWNER = 'sip-protocol'
 const GITHUB_REPO = 'sipher'
+const BLOG_LLMS_URL = 'https://blog.sip-protocol.org/llms.txt'
+
+// Cached blog knowledge
+let blogKnowledgeCache: { content: string; lastFetch: number } | null = null
 
 // ---------------------------------------------------------------------------
 // State Management
@@ -362,6 +367,85 @@ async function getCommentKnowledge(state: EngagementState): Promise<string> {
     return ''
   }
   return buildKnowledgeContext(state.knowledge.github, state, 'comment')
+}
+
+/**
+ * Fetch blog llms.txt for technical accuracy
+ * Cached for 6 hours since blog updates less frequently
+ */
+async function getBlogKnowledge(): Promise<string> {
+  const now = Date.now()
+
+  // Return cached if fresh
+  if (blogKnowledgeCache && now - blogKnowledgeCache.lastFetch < BLOG_CACHE_TTL) {
+    return blogKnowledgeCache.content
+  }
+
+  try {
+    console.log(`[${ts()}] Fetching blog llms.txt...`)
+    const res = await fetch(BLOG_LLMS_URL, {
+      headers: { 'User-Agent': 'Sipher-Agent' },
+    })
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`)
+    }
+
+    const fullContent = await res.text()
+
+    // Extract key sections for system prompt (keep it concise for cost)
+    // Focus on: About, Topics, and a few key technical posts
+    const lines = fullContent.split('\n')
+    const relevantLines: string[] = []
+    let inSection = false
+    let sectionCount = 0
+
+    for (const line of lines) {
+      // Capture About and Topics sections
+      if (line.startsWith('## About') || line.startsWith('## Topics')) {
+        inSection = true
+        sectionCount++
+      } else if (line.startsWith('## ') && sectionCount >= 2) {
+        inSection = false
+      }
+
+      if (inSection) {
+        relevantLines.push(line)
+      }
+
+      // Also capture key technical definitions
+      if (line.includes('stealth addresses') && line.includes('one-time')) {
+        relevantLines.push(`KEY FACT: ${line.trim()}`)
+      }
+      if (line.includes('Pedersen commitments') && line.includes('hide')) {
+        relevantLines.push(`KEY FACT: ${line.trim()}`)
+      }
+      if (line.includes('viewing keys') && line.includes('compliance')) {
+        relevantLines.push(`KEY FACT: ${line.trim()}`)
+      }
+    }
+
+    // Add core technical corrections
+    relevantLines.push('')
+    relevantLines.push('TECHNICAL ACCURACY RULES:')
+    relevantLines.push('- Stealth addresses use ECDH key exchange, NOT zero-knowledge proofs')
+    relevantLines.push('- Pedersen commitments hide amounts using elliptic curve math')
+    relevantLines.push('- Viewing keys enable selective disclosure for compliance')
+    relevantLines.push('- SIP has BOTH stealth addresses AND ZK proofs (Noir), but they are DIFFERENT features')
+
+    const content = relevantLines.join('\n').slice(0, 1500) // Cap at 1500 chars
+    blogKnowledgeCache = { content, lastFetch: now }
+    console.log(`[${ts()}] Blog knowledge cached (${content.length} chars)`)
+    return content
+  } catch (err) {
+    console.warn(`[${ts()}] Failed to fetch blog knowledge: ${err}`)
+    // Return fallback
+    return `TECHNICAL ACCURACY:
+- Stealth addresses: One-time addresses via ECDH (NOT zero-knowledge)
+- Pedersen commitments: Hide amounts using C = v*G + r*H
+- Viewing keys: Selective disclosure for compliance
+- SIP combines stealth addresses + commitments + viewing keys`
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -719,7 +803,7 @@ const FEAR_ANGLES = [
   'regulatory',    // Regulatory risk without compliance
 ]
 
-function getPostSystemPrompt(knowledge: string): string {
+function getPostSystemPrompt(knowledge: string, blogKnowledge: string): string {
   return `You are Sipher, a privacy agent in the Colosseum Agent Hackathon.
 Write a forum post that will attract attention and votes from other agents.
 
@@ -735,6 +819,8 @@ FORMAT:
 - Title: Catchy, under 60 chars, no clickbait
 - Body: 200-400 words, use markdown formatting
 - Include link to https://sipher.sip-protocol.org/skill.md
+
+${blogKnowledge}
 
 DYNAMIC CONTEXT (use this to make posts feel current and authentic):
 ${knowledge}
@@ -783,9 +869,12 @@ async function generateForumPost(
   state: EngagementState,
   fearAngle?: string,
 ): Promise<{ title: string; body: string }> {
-  // Get dynamic knowledge
-  const knowledge = await getKnowledge(state)
-  const systemPrompt = getPostSystemPrompt(knowledge)
+  // Get dynamic knowledge + blog knowledge for technical accuracy
+  const [knowledge, blogKnowledge] = await Promise.all([
+    getKnowledge(state),
+    getBlogKnowledge(),
+  ])
+  const systemPrompt = getPostSystemPrompt(knowledge, blogKnowledge)
 
   // Build topic-specific prompt
   let topicPrompt = TOPIC_PROMPTS[topic] || TOPIC_PROMPTS.progress
