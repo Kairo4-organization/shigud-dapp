@@ -249,10 +249,17 @@ function saveState(state: EngagementState): void {
 // GitHub Knowledge Fetching
 // ---------------------------------------------------------------------------
 
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || ''
+
 async function fetchGitHubKnowledge(): Promise<GitHubKnowledge> {
-  const headers = {
+  const headers: Record<string, string> = {
     'Accept': 'application/vnd.github+json',
     'User-Agent': 'Sipher-Agent',
+  }
+
+  // Use token if available (5000 req/hr vs 60 req/hr)
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`
   }
 
   // Fetch in parallel
