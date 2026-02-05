@@ -3,6 +3,13 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import type { ApiKeyConfig, ApiKeyTier, ApiKeyUsage, TierLimits } from '../types/api-key.js'
 import { TIER_LIMITS } from '../types/api-key.js'
+import {
+  isRedisConnected,
+  redisIncr,
+  redisExpire,
+  redisGet,
+  redisTtl,
+} from './redis.js'
 
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), 'data')
 const KEYS_FILE = join(DATA_DIR, 'api-keys.json')
@@ -139,9 +146,31 @@ export function getTierLimits(tier: ApiKeyTier): TierLimits {
   return TIER_LIMITS[tier]
 }
 
-// Usage tracking (in-memory, resets on restart for MVP)
+// Usage tracking — Redis with in-memory fallback
 const usageCache = new Map<string, { count: number; windowStart: number }>()
+const RATE_LIMIT_WINDOW_SECONDS = 3600 // 1 hour
 
+function getRedisKey(keyId: string): string {
+  return `sipher:ratelimit:${keyId}`
+}
+
+// Track usage — async for Redis, sync fallback for in-memory
+export async function trackUsageAsync(keyId: string): Promise<void> {
+  if (isRedisConnected()) {
+    const redisKey = getRedisKey(keyId)
+    const count = await redisIncr(redisKey)
+    if (count === 1) {
+      // First request in window, set expiry
+      await redisExpire(redisKey, RATE_LIMIT_WINDOW_SECONDS)
+    }
+    return
+  }
+
+  // Fallback to in-memory
+  trackUsage(keyId)
+}
+
+// Sync version for backwards compatibility
 export function trackUsage(keyId: string): void {
   const now = Date.now()
   const hourMs = 60 * 60 * 1000
@@ -154,12 +183,47 @@ export function trackUsage(keyId: string): void {
 
   usage.count++
   usageCache.set(keyId, usage)
+
+  // Fire-and-forget Redis update if connected
+  if (isRedisConnected()) {
+    trackUsageAsync(keyId).catch(() => {})
+  }
 }
 
 export function getUsage(keyId: string): { count: number; windowStart: number } | null {
   return usageCache.get(keyId) || null
 }
 
+// Async version for Redis
+export async function getUsageAsync(keyId: string): Promise<{ count: number; ttl: number } | null> {
+  if (isRedisConnected()) {
+    const redisKey = getRedisKey(keyId)
+    const [countStr, ttl] = await Promise.all([
+      redisGet(redisKey),
+      redisTtl(redisKey),
+    ])
+    if (countStr) {
+      return { count: parseInt(countStr, 10), ttl }
+    }
+  }
+  return null
+}
+
+export async function isRateLimitedAsync(keyId: string, tier: ApiKeyTier): Promise<boolean> {
+  const limits = getTierLimits(tier)
+
+  if (isRedisConnected()) {
+    const redisKey = getRedisKey(keyId)
+    const countStr = await redisGet(redisKey)
+    if (!countStr) return false
+    return parseInt(countStr, 10) >= limits.requestsPerHour
+  }
+
+  // Fallback to in-memory
+  return isRateLimited(keyId, tier)
+}
+
+// Sync version for backwards compatibility
 export function isRateLimited(keyId: string, tier: ApiKeyTier): boolean {
   const usage = usageCache.get(keyId)
   if (!usage) return false
@@ -174,6 +238,22 @@ export function isRateLimited(keyId: string, tier: ApiKeyTier): boolean {
   return usage.count >= limits.requestsPerHour
 }
 
+export async function getRemainingRequestsAsync(keyId: string, tier: ApiKeyTier): Promise<number> {
+  const limits = getTierLimits(tier)
+
+  if (isRedisConnected()) {
+    const redisKey = getRedisKey(keyId)
+    const countStr = await redisGet(redisKey)
+    if (!countStr) return limits.requestsPerHour
+    const count = parseInt(countStr, 10)
+    return Math.max(0, limits.requestsPerHour - count)
+  }
+
+  // Fallback to in-memory
+  return getRemainingRequests(keyId, tier)
+}
+
+// Sync version for backwards compatibility
 export function getRemainingRequests(keyId: string, tier: ApiKeyTier): number {
   const usage = usageCache.get(keyId)
   const limits = getTierLimits(tier)

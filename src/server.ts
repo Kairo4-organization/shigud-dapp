@@ -23,6 +23,12 @@ import {
 } from './middleware/index.js'
 import router from './routes/index.js'
 import { openApiSpec } from './openapi/spec.js'
+import { initRedis, closeRedis, isRedisEnabled, isRedisConnected } from './services/redis.js'
+
+// Initialize Redis (async, non-blocking)
+initRedis().catch((err) => {
+  logger.warn({ err }, 'Redis initialization failed — using in-memory fallback')
+})
 
 const app = express()
 
@@ -167,6 +173,7 @@ const server = app.listen(env.PORT, () => {
     port: env.PORT,
     environment: env.NODE_ENV,
     auth: isAuthEnabled() ? 'enabled' : 'disabled',
+    redis: isRedisEnabled() ? (isRedisConnected() ? 'connected' : 'connecting') : 'disabled',
     corsOrigins: getCorsConfig().origins.length,
   }, 'Sipher started')
 
@@ -189,6 +196,7 @@ const server = app.listen(env.PORT, () => {
 })
 
 setupGracefulShutdown(server, async () => {
+  await closeRedis()
   logger.info('Cleanup complete')
 })
 
