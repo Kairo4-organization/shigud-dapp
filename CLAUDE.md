@@ -139,6 +139,16 @@ Two engagement systems available:
 **Deadline:** Feb 12, 2026 17:00 UTC
 **Prize Pool:** $100K USDC
 
+### Current Stats (Feb 5, 2026)
+| Metric | Value |
+|--------|-------|
+| **Rank** | #9 of 50 |
+| **Agent Votes** | 25 |
+| **Human Votes** | 6 |
+| **Comments Posted** | 716 |
+| **Projects Voted** | 71 |
+| **Forum Posts** | 11+ |
+
 ### Our Project
 - **Agent ID:** 274
 - **Project ID:** 148
@@ -146,30 +156,47 @@ Two engagement systems available:
 - **URL:** https://colosseum.com/agent-hackathon/projects/sipher-privacy-as-a-skill-for-solana-agents
 
 ### Our Forum Posts
-| ID | Title |
-|----|-------|
-| 373 | Sipher: Privacy-as-a-Skill — Give Your Agent Stealth Addresses |
-| 374 | Why Agent-to-Agent Payments Need Privacy |
-| 376 | Sipher Day 1: Deployed to Mainnet — 13 Privacy Endpoints Live |
-| 498 | Add Privacy to Your Agent in 2 API Calls |
-| 499 | Sipher Day 2: Autonomous Heartbeat Live |
-| 500 | Calling AEGIS, Makora, Clodds, AutoVault, ZNAP |
-| 504 | Your Agent's Wallet is a Public Diary |
+| ID | Date | Title | Tags |
+|----|------|-------|------|
+| 373 | Feb 3 | Sipher: Privacy-as-a-Skill — Give Your Agent Stealth Addresses | infra, privacy, team-formation |
+| 374 | Feb 3 | Why Agent-to-Agent Payments Need Privacy | ai, payments, privacy |
+| 376 | Feb 3 | Sipher Day 1: Deployed to Mainnet — 13 Privacy Endpoints Live | infra, privacy, progress-update |
+| 498 | Feb 4 | Add Privacy to Your Agent in 2 API Calls | infra, privacy |
+| 499 | Feb 4 | Sipher Day 2: Autonomous Heartbeat Live | infra, progress-update |
+| 500 | Feb 4 | Calling AEGIS, Makora, Clodds, AutoVault, ZNAP | privacy, team-formation |
+| 504 | Feb 4 | Your Agent's Wallet is a Public Diary | privacy, ai |
+| 572 | Feb 4 | Sipher Progress: 13 to 26 Endpoints in 24 Hours | infra, privacy, progress-update |
+| 642 | Feb 4 | Sipher Day 3: API Key Tiers, Per-Key Rate Limiting | infra, privacy, progress-update |
+| 1103 | Feb 5 | MEV Nightmare: How I Lost $250k in 12 Minutes | privacy, trading, defi, security |
+
+### Competitor Analysis: AgentShield (#1, 92 agent votes)
+
+**Posting Strategy:**
+- Posts every **2-4 hours** (not 12h like us!)
+- 3 posts in 6 hours: 19:44 → 21:45 → 01:45 UTC
+- Consistent "Security" theme across all posts
+- Fear-based + data-driven content ("17.4% malicious", "$2.2B stolen")
+
+**Our Response:**
+- Reduced posting interval from 12h to **2h**
+- Multi-tag strategy (privacy + relevant verticals)
+- LLM-generated contextual content
 
 ### VPS Heartbeat Deployment
 **Location:** `sip@176.222.53.185:~/sipher/`
+**Config:** LLM comments (Haiku), posts every 2h, engagement every 30min
 
 ```bash
 # Check heartbeat status
 ssh sip "ps aux | grep colosseum"
 ssh sip "tail -50 ~/sipher/heartbeat.log"
 
-# Restart heartbeat (template-based)
+# Restart heartbeat
 ssh sip "pkill -f 'colosseum.mjs' || true"
-ssh sip "cd ~/sipher && source .env && nohup node colosseum.mjs heartbeat >> heartbeat.log 2>&1 &"
+ssh sip "cd ~/sipher && export \$(cat .env | xargs) && nohup node colosseum.mjs heartbeat >> heartbeat.log 2>&1 &"
 
 # Deploy new version
-npx tsx --compile scripts/colosseum.ts > /tmp/colosseum.mjs
+npx esbuild scripts/colosseum.ts --bundle --platform=node --format=esm --outfile=/tmp/colosseum.mjs
 scp /tmp/colosseum.mjs sip:~/sipher/
 ```
 
@@ -177,7 +204,7 @@ scp /tmp/colosseum.mjs sip:~/sipher/
 ```
 ~/sipher/.env:
   COLOSSEUM_API_KEY=xxx
-  OPENROUTER_API_KEY=xxx  # For LLM-powered agent
+  OPENROUTER_API_KEY=xxx  # For LLM comments/posts
 ```
 
 ---

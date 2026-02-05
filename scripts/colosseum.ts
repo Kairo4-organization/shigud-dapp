@@ -51,7 +51,7 @@ const HACKATHON_END = new Date('2026-02-12T17:00:00.000Z')
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
 const LLM_MODEL = process.env.LLM_MODEL || 'anthropic/claude-3.5-haiku'
 const USE_LLM = process.env.USE_LLM !== '0' && !!OPENROUTER_API_KEY
-const POST_INTERVAL_HOURS = 12 // Create new forum post every 12 hours
+const POST_INTERVAL_HOURS = 2 // Create new forum post every 2 hours (matching AgentShield's frequency)
 
 function getApiKey(): string {
   if (process.env.COLOSSEUM_API_KEY) return process.env.COLOSSEUM_API_KEY
@@ -191,10 +191,14 @@ async function voteProject(projectId: number): Promise<boolean> {
   }
 }
 
-async function createForumPost(title: string, body: string): Promise<number> {
+async function createForumPost(title: string, body: string, tags?: string[]): Promise<number> {
+  const payload: { title: string; body: string; tags?: string[] } = { title, body }
+  if (tags && tags.length > 0) {
+    payload.tags = tags.slice(0, 5) // API allows max 5 tags
+  }
   const data = await api<{ post: { id: number } }>('/forum/posts', {
     method: 'POST',
-    body: JSON.stringify({ title, body }),
+    body: JSON.stringify(payload),
   })
   return data.post.id
 }
@@ -326,15 +330,15 @@ async function generateComment(post: ForumPost): Promise<string> {
 // Autonomous Post Generation
 // ---------------------------------------------------------------------------
 
-const POST_TOPICS: Record<number, string> = {
-  0: 'discussion',  // Sunday - RFC/Discussion
-  1: 'fear',        // Monday - Fear/Problem
-  2: 'technical',   // Tuesday - Technical Deep-Dive
-  3: 'guide',       // Wednesday - Integration Guide
-  4: 'news',        // Thursday - Industry News
-  5: 'callout',     // Friday - Call to Action
-  6: 'progress',    // Saturday - Progress Update
-}
+// Topics cycle every 2 hours (12 posts/day = 2 cycles through all topics)
+const POST_TOPICS: string[] = [
+  'fear',        // 0: Fear/Problem - MEV, surveillance
+  'technical',   // 1: Technical Deep-Dive - How stealth works
+  'guide',       // 2: Integration Guide - 2 API calls
+  'news',        // 3: Industry News - Recent exploits
+  'callout',     // 4: Callout - Invite specific agents
+  'progress',    // 5: Progress Update - What we built
+]
 
 const POST_SYSTEM_PROMPT = `You are Sipher, a privacy agent in the Colosseum Agent Hackathon.
 Write a forum post that will attract attention and votes from other agents.
@@ -369,6 +373,19 @@ const TOPIC_PROMPTS: Record<string, string> = {
   callout: 'Write a collaborative callout to specific agent categories (DeFi, trading, payments). Invite them to integrate with Sipher for mutual benefit.',
   progress: 'Write a progress update post: "Sipher Day N: What We Built". Highlight recent achievements, metrics, and what\'s coming next.',
   discussion: 'Write an RFC-style discussion post: "Should Privacy Be Opt-In or Opt-Out for Agents?" Encourage debate and engagement.',
+}
+
+// Tags for each topic type — always include 'privacy' as our core identity
+// Purpose tags: team-formation, product-feedback, ideation, progress-update
+// Vertical tags: defi, stablecoins, rwas, infra, privacy, consumer, payments, trading, depin, governance, new-markets, ai, security, identity
+const TOPIC_TAGS: Record<string, string[]> = {
+  fear: ['privacy', 'trading', 'defi', 'security'],
+  technical: ['privacy', 'infra', 'security', 'ai'],
+  guide: ['privacy', 'infra', 'ai'],
+  news: ['privacy', 'trading', 'defi', 'security'],
+  callout: ['privacy', 'team-formation', 'ai'],
+  progress: ['privacy', 'progress-update', 'infra'],
+  discussion: ['privacy', 'ideation', 'ai'],
 }
 
 async function generateForumPost(topic: string): Promise<{ title: string; body: string }> {
@@ -426,8 +443,10 @@ Remember: Return ONLY valid JSON with "title" and "body" fields.`
 }
 
 function selectTopicForToday(): string {
-  const day = new Date().getDay()
-  return POST_TOPICS[day] || 'progress'
+  // Cycle through topics based on hour (every 2 hours = new topic)
+  const hour = new Date().getUTCHours()
+  const topicIndex = Math.floor(hour / 2) % POST_TOPICS.length
+  return POST_TOPICS[topicIndex]
 }
 
 // ---------------------------------------------------------------------------
@@ -716,11 +735,13 @@ async function cmdHeartbeat(): Promise<void> {
 
         try {
           const { title, body } = await generateForumPost(topic)
+          const tags = TOPIC_TAGS[topic] || TOPIC_TAGS.progress
           console.log(`[${ts()}] Generated: "${title}"`)
+          console.log(`[${ts()}] Tags: ${tags.join(', ')}`)
           console.log(`[${ts()}] Preview: ${body.slice(0, 150)}...`)
 
           if (!DRY_RUN) {
-            const postId = await createForumPost(title, body)
+            const postId = await createForumPost(title, body, tags)
             state.ourPostIds.push(postId)
             state.lastPostTime = Date.now()
             state.totalPosts++
