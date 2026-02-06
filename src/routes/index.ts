@@ -10,6 +10,7 @@ import privacyRouter from './privacy.js'
 import rpcRouter from './rpc.js'
 import proofsRouter from './proofs.js'
 import csplRouter from './cspl.js'
+import privateTransferRouter from './private-transfer.js'
 import adminRouter from './admin.js'
 
 const router = Router()
@@ -18,6 +19,7 @@ router.use(healthRouter)
 router.use(stealthRouter)
 router.use(commitmentRouter)
 router.use(transferRouter)
+router.use(privateTransferRouter)
 router.use(scanRouter)
 router.use(viewingKeyRouter)
 router.use(errorsRouter)
