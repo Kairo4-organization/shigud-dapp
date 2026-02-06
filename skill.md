@@ -683,9 +683,47 @@ Returns: `decryptedOutput`, `verificationHash`, `operation`.
 
 ---
 
+### Private Swap (Beta)
+
+Privacy-preserving token swap via Jupiter DEX. Orchestrates stealth address generation, optional C-SPL wrapping, and Jupiter swap into a single call. Output routed to a stealth address with Pedersen commitment.
+
+```
+POST /v1/swap/private
+Content-Type: application/json
+
+{
+  "sender": "<base58 Solana address>",
+  "inputMint": "So11111111111111111111111111111111111111112",
+  "inputAmount": "1000000000",
+  "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "slippageBps": 50,
+  "recipientMetaAddress": {
+    "spendingKey": "0x...",
+    "viewingKey": "0x...",
+    "chain": "solana"
+  }
+}
+```
+
+**Parameters:**
+- `sender` — Solana wallet address paying for the swap
+- `inputMint` — SPL token mint to swap from
+- `inputAmount` — Amount in smallest units (lamports)
+- `outputMint` — SPL token mint to swap to
+- `slippageBps` — Slippage tolerance in basis points (default: 50 = 0.5%)
+- `recipientMetaAddress` — Optional. If omitted, an ephemeral stealth address is generated.
+
+**Supported tokens:** SOL, USDC, USDT, mSOL, JitoSOL
+
+Returns: privacy artifacts (`outputStealthAddress`, `ephemeralPublicKey`, `viewTag`, `commitment`, `blindingFactor`, `viewingKeyHash`, `sharedSecret`), swap details (`quoteId`, `outputAmount`, `outputAmountMin`, `priceImpactPct`), and `transactions[]` (ordered bundle of wrap + swap txs).
+
+Supports `Idempotency-Key` header.
+
+---
+
 ## Idempotency
 
-Mutation endpoints (`/transfer/shield`, `/transfer/claim`, `/transfer/private`, `/commitment/create`, `/viewing-key/disclose`) support the `Idempotency-Key` header. Send a UUID v4 value to safely retry requests — duplicate keys return the cached response with `Idempotency-Replayed: true` header.
+Mutation endpoints (`/transfer/shield`, `/transfer/claim`, `/transfer/private`, `/commitment/create`, `/viewing-key/disclose`, `/swap/private`) support the `Idempotency-Key` header. Send a UUID v4 value to safely retry requests — duplicate keys return the cached response with `Idempotency-Replayed: true` header.
 
 ---
 
