@@ -71,6 +71,16 @@ export enum ErrorCode {
   // 400 — Private Swap
   SWAP_UNSUPPORTED_TOKEN = 'SWAP_UNSUPPORTED_TOKEN',
 
+  // 403 — Tier Access
+  TIER_ACCESS_DENIED = 'TIER_ACCESS_DENIED',
+
+  // 500 — Compliance
+  COMPLIANCE_DISCLOSURE_FAILED = 'COMPLIANCE_DISCLOSURE_FAILED',
+  COMPLIANCE_REPORT_FAILED = 'COMPLIANCE_REPORT_FAILED',
+
+  // 404 — Compliance
+  COMPLIANCE_REPORT_NOT_FOUND = 'COMPLIANCE_REPORT_NOT_FOUND',
+
   // 503 — Service Unavailable
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
   SOLANA_RPC_UNAVAILABLE = 'SOLANA_RPC_UNAVAILABLE',
@@ -319,6 +329,36 @@ export const ERROR_CATALOG: ErrorCatalogEntry[] = [
     code: ErrorCode.SWAP_UNSUPPORTED_TOKEN,
     httpStatus: 400,
     description: 'Token not supported by Jupiter DEX mock. Check supportedTokens in the response.',
+    retryable: false,
+  },
+
+  // 403 — Tier Access
+  {
+    code: ErrorCode.TIER_ACCESS_DENIED,
+    httpStatus: 403,
+    description: 'Endpoint requires a higher API key tier. Upgrade to enterprise for compliance features.',
+    retryable: false,
+  },
+
+  // 500 — Compliance
+  {
+    code: ErrorCode.COMPLIANCE_DISCLOSURE_FAILED,
+    httpStatus: 500,
+    description: 'Compliance selective disclosure failed. Auditor verification or scoped key derivation encountered an error.',
+    retryable: true,
+  },
+  {
+    code: ErrorCode.COMPLIANCE_REPORT_FAILED,
+    httpStatus: 500,
+    description: 'Compliance audit report generation failed.',
+    retryable: true,
+  },
+
+  // 404 — Compliance
+  {
+    code: ErrorCode.COMPLIANCE_REPORT_NOT_FOUND,
+    httpStatus: 404,
+    description: 'Compliance report not found. The report ID may be expired or invalid.',
     retryable: false,
   },
 
