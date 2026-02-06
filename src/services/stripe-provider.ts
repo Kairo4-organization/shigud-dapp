@@ -1,6 +1,8 @@
 import { keccak_256 } from '@noble/hashes/sha3'
 import { bytesToHex } from '@noble/hashes/utils'
+import { timingSafeEqual } from 'crypto'
 import { LRUCache } from 'lru-cache'
+import { env } from '../config.js'
 import type { ApiKeyTier } from '../types/api-key.js'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -224,18 +226,25 @@ export function createPortalSession(customerId: string): PortalSession {
 
 // ─── Webhook Processing ─────────────────────────────────────────────────────
 
-const WEBHOOK_SECRET = 'whsec_sipher_mock_secret'
+function getWebhookSecret(): string {
+  return env.STRIPE_WEBHOOK_SECRET
+}
 
 export function validateWebhookSignature(
   payload: string,
   signature: string,
 ): boolean {
-  const expected = domainHash('WEBHOOK', payload + WEBHOOK_SECRET)
-  return signature === expected
+  const expected = domainHash('WEBHOOK', payload + getWebhookSecret())
+  if (signature.length !== expected.length) return false
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  } catch {
+    return false
+  }
 }
 
 export function computeWebhookSignature(payload: string): string {
-  return domainHash('WEBHOOK', payload + WEBHOOK_SECRET)
+  return domainHash('WEBHOOK', payload + getWebhookSecret())
 }
 
 export function processWebhookEvent(
