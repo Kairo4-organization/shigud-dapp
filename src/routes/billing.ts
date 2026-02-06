@@ -135,8 +135,10 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = req.apiKey?.id ?? req.headers['x-api-key'] as string ?? 'unknown'
-      const limit = parseInt(req.query.limit as string) || 10
-      const offset = parseInt(req.query.offset as string) || 0
+      const rawLimit = parseInt(req.query.limit as string)
+      const rawOffset = parseInt(req.query.offset as string)
+      const limit = Number.isNaN(rawLimit) ? 10 : Math.min(Math.max(rawLimit, 1), 100)
+      const offset = Number.isNaN(rawOffset) ? 0 : Math.max(rawOffset, 0)
 
       const result = listInvoices(customerId, limit, offset)
 
