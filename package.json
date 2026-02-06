@@ -18,7 +18,9 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "colosseum": "tsx scripts/colosseum.ts",
-    "demo": "tsx scripts/demo-flow.ts"
+    "demo": "tsx scripts/demo-flow.ts",
+    "openapi:export": "tsx scripts/export-openapi.ts",
+    "sdks:generate": "bash sdks/generator/generate.sh"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.31",
