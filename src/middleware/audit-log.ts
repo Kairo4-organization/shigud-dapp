@@ -57,12 +57,13 @@ export function auditLog(req: Request, res: Response, next: NextFunction) {
   const originalEnd = res.end.bind(res)
 
   // Override res.end to capture timing
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- overriding Express internal
   ;(res as any).end = function (...args: any[]) {
     const latencyMs = Math.round(performance.now() - start)
 
     const auditEntry = {
       audit: true,
-      requestId: (req as any).requestId || req.headers['x-request-id'],
+      requestId: (req as unknown as Record<string, unknown>).requestId || req.headers['x-request-id'],
       method: req.method,
       path: req.path,
       status: res.statusCode,

@@ -3,8 +3,15 @@ import { logger } from '../logger.js'
 import { env } from '../config.js'
 import { ErrorCode } from '../errors/codes.js'
 
+/** Extended error interface for SDK/domain errors with custom properties */
+interface SipError extends Error {
+  proofType?: string
+  code?: string
+  field?: string
+}
+
 export function errorHandler(
-  err: Error,
+  err: SipError,
   req: Request,
   res: Response,
   _next: NextFunction
@@ -35,7 +42,7 @@ export function errorHandler(
       error: {
         code: ErrorCode.PROOF_GENERATION_FAILED,
         message: err.message,
-        details: { proofType: (err as any).proofType },
+        details: { proofType: err.proofType },
       },
     })
     return
@@ -155,13 +162,13 @@ export function errorHandler(
   }
 
   // Handle SIP SDK ValidationError
-  if (err.name === 'ValidationError' || (err as any).code?.startsWith?.('VALIDATION')) {
+  if (err.name === 'ValidationError' || err.code?.startsWith?.('VALIDATION')) {
     res.status(400).json({
       success: false,
       error: {
-        code: (err as any).code || ErrorCode.VALIDATION_ERROR,
+        code: err.code || ErrorCode.VALIDATION_ERROR,
         message: err.message,
-        details: (err as any).field ? { field: (err as any).field } : undefined,
+        details: err.field ? { field: err.field } : undefined,
       },
     })
     return

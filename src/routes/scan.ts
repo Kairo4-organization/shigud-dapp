@@ -164,14 +164,14 @@ router.post(
       })
 
       const filtered = toSlot
-        ? signatures.filter((s: any) => s.slot <= toSlot)
+        ? signatures.filter(s => s.slot <= toSlot)
         : signatures
 
       const keyPairResults: Array<{
         index: number
         label?: string
         success: boolean
-        data?: { payments: any[]; scanned: number }
+        data?: { payments: Array<{ stealthAddress: string; ephemeralPublicKey: string; txSignature: string; slot: number; timestamp: number }>; scanned: number }
         error?: string
       }> = []
 
@@ -257,12 +257,12 @@ router.post(
             success: true,
             data: { payments, scanned: filtered.length },
           })
-        } catch (err: any) {
+        } catch (err: unknown) {
           keyPairResults.push({
             index: kpIdx,
             label: kp.label,
             success: false,
-            error: err.message || 'Scan failed',
+            error: err instanceof Error ? err.message : 'Scan failed',
           })
         }
       }

@@ -122,11 +122,11 @@ router.post(
               blindingFactor: result.blinding as string,
             },
           })
-        } catch (err: any) {
+        } catch (err: unknown) {
           results.push({
             index: i,
             success: false,
-            error: err.message || 'Commitment failed',
+            error: err instanceof Error ? err.message : 'Commitment failed',
           })
         }
       }
