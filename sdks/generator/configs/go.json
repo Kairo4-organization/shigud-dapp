@@ -1,0 +1,7 @@
+{
+  "packageName": "sipher",
+  "moduleName": "github.com/sip-protocol/sipher/sdks/go",
+  "packageVersion": "0.1.0",
+  "enumClassPrefix": true,
+  "isGoSubmodule": true
+}

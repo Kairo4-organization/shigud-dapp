@@ -1,0 +1,6 @@
+{
+  "packageName": "sipher_client",
+  "projectName": "sipher-client",
+  "packageVersion": "0.1.0",
+  "library": "urllib3"
+}
