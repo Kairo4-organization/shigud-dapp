@@ -115,6 +115,7 @@ app.get('/', (_req, res) => {
         list: 'GET /v1/backends',
         health: 'GET /v1/backends/:id/health',
         select: 'POST /v1/backends/select',
+        compare: 'POST /v1/backends/compare',
       },
       proofs: {
         fundingGenerate: 'POST /v1/proofs/funding/generate',

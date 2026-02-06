@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { validateRequest } from '../middleware/validation.js'
 import { getBackendRegistry } from '../services/backend-registry.js'
 import { updateApiKeyMetadata, validateApiKey } from '../services/api-keys.js'
+import { compareBackends } from '../services/backend-comparison.js'
 
 const router = Router()
 
@@ -179,6 +180,33 @@ router.post(
           keyId: apiKey.id,
           preferredBackend: backendName,
         },
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+// ─── POST /backends/compare ──────────────────────────────────────────────────
+
+const compareSchema = z.object({
+  operation: z.enum(['stealth_privacy', 'encrypted_compute', 'compliance_audit']),
+  chain: z.string().min(1).optional(),
+  amount: z.string().regex(/^[1-9]\d*$/).optional(),
+  prioritize: z.enum(['cost', 'speed', 'privacy']).optional(),
+})
+
+router.post(
+  '/backends/compare',
+  validateRequest({ body: compareSchema }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { operation, chain, amount, prioritize } = req.body
+      const result = await compareBackends({ operation, chain, amount, prioritize })
+
+      res.json({
+        success: true,
+        data: result,
       })
     } catch (err) {
       next(err)
