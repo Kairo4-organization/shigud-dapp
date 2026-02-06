@@ -19,6 +19,9 @@ function getAllowedOrigins(): string[] {
 }
 
 function isOriginAllowed(origin: string | undefined): boolean {
+  // Non-browser clients (curl, agents, server-to-server) omit the Origin header.
+  // CORS is a browser-only mechanism — allow originless requests through;
+  // auth is enforced separately via API key middleware.
   if (!origin) return true
   const allowed = getAllowedOrigins()
   if (allowed.includes(origin)) return true
