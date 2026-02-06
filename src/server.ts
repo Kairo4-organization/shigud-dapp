@@ -118,6 +118,8 @@ app.get('/', (_req, res) => {
         validityVerify: 'POST /v1/proofs/validity/verify',
         fulfillmentGenerate: 'POST /v1/proofs/fulfillment/generate',
         fulfillmentVerify: 'POST /v1/proofs/fulfillment/verify',
+        rangeGenerate: 'POST /v1/proofs/range/generate',
+        rangeVerify: 'POST /v1/proofs/range/verify',
       },
       cspl: {
         wrap: 'POST /v1/cspl/wrap',

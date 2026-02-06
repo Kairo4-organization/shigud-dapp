@@ -9,6 +9,7 @@ import errorsRouter from './errors.js'
 import privacyRouter from './privacy.js'
 import rpcRouter from './rpc.js'
 import proofsRouter from './proofs.js'
+import rangeProofRouter from './range-proof.js'
 import csplRouter from './cspl.js'
 import privateTransferRouter from './private-transfer.js'
 import adminRouter from './admin.js'
@@ -26,6 +27,7 @@ router.use(errorsRouter)
 router.use(privacyRouter)
 router.use(rpcRouter)
 router.use(proofsRouter)
+router.use(rangeProofRouter)
 router.use(csplRouter)
 router.use('/admin', adminRouter)
 
