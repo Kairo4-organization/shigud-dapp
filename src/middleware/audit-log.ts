@@ -13,6 +13,7 @@ const SENSITIVE_KEYS = new Set([
   'sharedSecret',
   'key',
   'privateKey',
+  'encryptedInputs',
 ])
 
 function sanitizeBody(body: unknown): unknown {
