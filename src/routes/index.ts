@@ -19,6 +19,7 @@ import privateSwapRouter from './private-swap.js'
 import sessionRouter from './session.js'
 import complianceRouter from './compliance.js'
 import governanceRouter from './governance.js'
+import jitoRouter from './jito.js'
 import adminRouter from './admin.js'
 
 const router = Router()
@@ -43,6 +44,7 @@ router.use(privateSwapRouter)
 router.use(sessionRouter)
 router.use(complianceRouter)
 router.use(governanceRouter)
+router.use(jitoRouter)
 router.use('/admin', adminRouter)
 
 export default router

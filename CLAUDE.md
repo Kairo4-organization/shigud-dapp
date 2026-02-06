@@ -6,7 +6,7 @@
 **Live URL:** https://sipher.sip-protocol.org
 **Tagline:** "Privacy-as-a-Skill for Multi-Chain Agents"
 **Purpose:** REST API + OpenClaw skill enabling any autonomous agent to add transaction privacy via SIP Protocol
-**Stats:** 95 endpoints | 488 tests | 17 chains | 4 client SDKs (TS, Python, Rust, Go)
+**Stats:** 97 endpoints | 508 tests | 17 chains | 4 client SDKs (TS, Python, Rust, Go)
 
 ---
 
@@ -68,7 +68,7 @@
 pnpm install                    # Install dependencies
 pnpm dev                        # Dev server (localhost:5006)
 pnpm build                      # Build for production
-pnpm test -- --run              # Run tests (488 tests, 32 suites)
+pnpm test -- --run              # Run tests (508 tests, 33 suites)
 pnpm typecheck                  # Type check
 pnpm demo                       # Full-flow demo (requires dev server running)
 pnpm openapi:export              # Export static OpenAPI spec to dist/openapi.json
@@ -256,6 +256,7 @@ sipher/
 │   │   ├── session.ts              # Session CRUD (create, get, update, delete)
 │   │   ├── governance.ts           # Governance voting privacy (encrypt, submit, tally, getTally)
 │   │   ├── compliance.ts           # Compliance (disclose, report, report/:id)
+│   │   ├── jito.ts                 # Jito gas abstraction (relay, bundle/:id)
 │   │   └── index.ts                # Route aggregator
 │   ├── services/
 │   │   ├── solana.ts               # Connection manager + RPC latency measurement
@@ -273,6 +274,7 @@ sipher/
 │   │   ├── session-provider.ts     # Session management (LRU cache + Redis, CRUD, ownership)
 │   │   ├── governance-provider.ts # Governance voting (encrypted ballots, nullifiers, homomorphic tally)
 │   │   ├── compliance-provider.ts # Compliance provider (disclosure, reports, auditor verification)
+│   │   ├── jito-provider.ts       # Jito block engine mock (bundle relay, status, tip accounts)
 │   │   └── backend-registry.ts    # Privacy backend registry singleton (SIPNative + Arcium + Inco)
 │   └── types/
 │       └── api.ts                  # ApiResponse<T>, HealthResponse
@@ -291,7 +293,7 @@ sipher/
 │   ├── colosseum.ts                # Template-based engagement (LLM for comments/posts)
 │   ├── sipher-agent.ts             # LLM-powered autonomous agent (ReAct loop)
 │   └── demo-flow.ts                # Full E2E demo (21 endpoints)
-├── tests/                          # 488 tests across 32 suites
+├── tests/                          # 508 tests across 33 suites
 │   ├── health.test.ts              # 11 tests (health + ready + root + skill + 404 + reqId)
 │   ├── stealth.test.ts             # 10 tests
 │   ├── commitment.test.ts          # 16 tests (create, verify, add, subtract)
@@ -317,7 +319,8 @@ sipher/
 │   ├── backend-comparison.test.ts # 23 tests (basic, scoring, prioritize, validation, cache, edge cases)
 │   ├── session.test.ts            # 28 tests (CRUD, middleware merge, tier gating, ownership)
 │   ├── governance.test.ts         # 23 tests (encrypt, submit, tally, double-vote, E2E flow)
-│   └── compliance.test.ts         # 23 tests (disclose, report, get, tier gating, auditor verification)
+│   ├── compliance.test.ts         # 23 tests (disclose, report, get, tier gating, auditor verification)
+│   └── jito.test.ts               # 20 tests (relay, bundle status, tier gating, idempotency, state machine)
 ├── Dockerfile                      # Multi-stage Alpine
 ├── docker-compose.yml              # name: sipher, port 5006
 ├── .github/workflows/deploy.yml    # GHCR → VPS
@@ -331,7 +334,7 @@ sipher/
 
 ---
 
-## API ENDPOINTS (51 endpoints)
+## API ENDPOINTS (53 endpoints)
 
 All return `ApiResponse<T>`: `{ success, data?, error? }`
 
@@ -389,6 +392,8 @@ All return `ApiResponse<T>`: `{ success, data?, error? }`
 | POST | `/v1/governance/ballot/submit` | Submit encrypted ballot to a proposal | Yes | ✓ |
 | POST | `/v1/governance/tally` | Homomorphic tally of all ballots for a proposal | Yes | ✓ |
 | GET | `/v1/governance/tally/:id` | Get tally result | Yes | — |
+| POST | `/v1/jito/relay` | Submit transaction(s) via Jito bundle (beta) | Yes | ✓ |
+| GET | `/v1/jito/bundle/:id` | Poll Jito bundle status (beta) | Yes | — |
 
 ### Idempotency
 
@@ -449,6 +454,9 @@ All error codes are centralized in `src/errors/codes.ts` (ErrorCode enum). Full 
 | **500** | GOVERNANCE_ENCRYPT_FAILED, GOVERNANCE_SUBMIT_FAILED, GOVERNANCE_TALLY_FAILED |
 | **404** | GOVERNANCE_TALLY_NOT_FOUND, GOVERNANCE_PROPOSAL_NOT_FOUND |
 | **409** | GOVERNANCE_DOUBLE_VOTE |
+| **500** | JITO_RELAY_FAILED |
+| **404** | JITO_BUNDLE_NOT_FOUND |
+| **400** | JITO_INVALID_TRANSACTION |
 | **503** | SERVICE_UNAVAILABLE, SOLANA_RPC_UNAVAILABLE |
 
 ---
@@ -468,7 +476,7 @@ All error codes are centralized in `src/errors/codes.ts` (ErrorCode enum). Full 
 ## AI GUIDELINES
 
 ### DO:
-- Run `pnpm test -- --run` after code changes (488 tests must pass)
+- Run `pnpm test -- --run` after code changes (508 tests must pass)
 - Run `pnpm typecheck` before committing
 - Use @sip-protocol/sdk for all crypto operations (never roll your own)
 - Keep API responses consistent: `{ success, data?, error? }`
@@ -515,11 +523,11 @@ See [ROADMAP.md](ROADMAP.md) for the full 6-phase roadmap (38 issues across 6 mi
 | 5 | Backend Aggregation | 5 | 🔲 Planned |
 | 6 | Enterprise | 6 | 🔲 Planned |
 
-**Progress:** 34/38 issues complete | 488 tests | 95 endpoints | 17 chains
+**Progress:** 35/38 issues complete | 508 tests | 97 endpoints | 17 chains
 
 **Quick check:** `gh issue list -R sip-protocol/sipher --state open`
 
 ---
 
 **Last Updated:** 2026-02-06
-**Status:** Phase 5 In Progress | 91 Endpoints | 465 Tests | 17 Chains | Agent #274 Active
+**Status:** Phase 6 In Progress | 97 Endpoints | 508 Tests | 17 Chains | Agent #274 Active

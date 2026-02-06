@@ -103,14 +103,14 @@ Sipher becomes the **universal privacy middleware API** — the single REST endp
 
 > Revenue generation, enterprise adoption, ecosystem growth.
 
-| ID | Title | Size |
-|----|-------|------|
-| S6-01 | Add compliance/disclosure endpoints (selective disclosure, audit reports) | L |
-| S6-02 | Auto-generate typed client SDKs (Python, Rust, Go) from OpenAPI spec | L |
-| S6-03 | Add billing and metering middleware (Stripe integration, usage tracking) | XL |
-| S6-04 | Add agent session management (pre-configured defaults per session) | M |
-| S6-05 | Add governance/voting privacy endpoints (encrypted ballots, homomorphic tally) | M |
-| S6-06 | Add Jito gas abstraction endpoint (relay transactions via Jito bundles) | M |
+| ID | Title | Size | Status |
+|----|-------|------|--------|
+| S6-01 | Add compliance/disclosure endpoints (selective disclosure, audit reports) | L | ✅ |
+| S6-02 | Auto-generate typed client SDKs (Python, Rust, Go) from OpenAPI spec | L | ✅ |
+| S6-03 | Add billing and metering middleware (Stripe integration, usage tracking) | XL | |
+| S6-04 | Add agent session management (pre-configured defaults per session) | M | ✅ |
+| S6-05 | Add governance/voting privacy endpoints (encrypted ballots, homomorphic tally) | M | ✅ |
+| S6-06 | Add Jito gas abstraction endpoint (relay transactions via Jito bundles) | M | ✅ |
 
 **Outcome:** Revenue stream, enterprise compliance, multi-language SDK, gas abstraction.
 

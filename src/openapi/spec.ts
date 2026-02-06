@@ -3411,6 +3411,104 @@ export const openApiSpec = {
         },
       },
     },
+  // ─── Jito Gas Abstraction ───────────────────────────────────────────────
+    '/v1/jito/relay': {
+      post: {
+        tags: ['Gas Abstraction'],
+        operationId: 'submitJitoBundle',
+        summary: 'Submit transaction(s) via Jito bundle',
+        description: 'Submit one or more transactions as a Jito bundle for MEV-protected execution. Optionally enable gas sponsorship (enterprise tier).',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  transactions: { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 5, description: 'Base64-encoded serialized Solana transactions' },
+                  tipLamports: { type: 'string', pattern: '^[1-9]\\d*$', default: '10000', description: 'Tip amount in lamports (minimum 1000)' },
+                  gasSponsorship: { type: 'boolean', default: false, description: 'Enable gas sponsorship (enterprise tier only)' },
+                },
+                required: ['transactions'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Bundle submitted successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    beta: { type: 'boolean' },
+                    warning: { type: 'string' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        bundleId: { type: 'string', pattern: '^jito_[0-9a-fA-F]{64}$' },
+                        status: { type: 'string', enum: ['submitted'] },
+                        tipAccount: { type: 'string', description: 'Jito tip account address' },
+                        tipLamports: { type: 'string' },
+                        gasSponsored: { type: 'boolean' },
+                        slot: { type: 'integer' },
+                        signature: { type: 'string' },
+                        estimatedConfirmation: { type: 'integer' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Validation error or invalid transaction', content: { 'application/json': { schema: errorResponse } } },
+          403: { description: 'Gas sponsorship requires enterprise tier', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
+    '/v1/jito/bundle/{id}': {
+      get: {
+        tags: ['Gas Abstraction'],
+        operationId: 'getJitoBundleStatus',
+        summary: 'Poll bundle status',
+        description: 'Check the status of a previously submitted Jito bundle. Status progresses: submitted → bundled → confirming → confirmed.',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', pattern: '^jito_[0-9a-fA-F]{64}$' }, description: 'Jito bundle ID' },
+        ],
+        responses: {
+          200: {
+            description: 'Bundle status retrieved',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    beta: { type: 'boolean' },
+                    warning: { type: 'string' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        bundleId: { type: 'string' },
+                        status: { type: 'string', enum: ['submitted', 'bundled', 'confirming', 'confirmed'] },
+                        progress: { type: 'integer', minimum: 0, maximum: 100 },
+                        slot: { type: 'integer' },
+                        signature: { type: 'string' },
+                        confirmedAt: { type: 'integer', description: 'Present when status is confirmed' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Invalid bundle ID format', content: { 'application/json': { schema: errorResponse } } },
+          404: { description: 'Bundle not found', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
   },
   tags: [
     { name: 'Health', description: 'Server health, readiness, and error catalog' },
@@ -3430,5 +3528,6 @@ export const openApiSpec = {
     { name: 'Sessions', description: 'Agent session management — configure default parameters (chain, backend, privacy level) applied to all requests' },
     { name: 'Compliance', description: 'Enterprise compliance endpoints — selective disclosure, audit reports, and auditor verification' },
     { name: 'Governance', description: 'Privacy-preserving governance — encrypted ballots via Pedersen commitments, nullifier-based double-vote prevention, and homomorphic vote tallying' },
+    { name: 'Gas Abstraction', description: 'Jito bundle relay for MEV-protected privacy transactions with optional gas sponsorship' },
   ],
 }

@@ -102,6 +102,15 @@ export enum ErrorCode {
   // 500 — Session
   SESSION_CREATE_FAILED = 'SESSION_CREATE_FAILED',
 
+  // 500 — Jito Gas Abstraction
+  JITO_RELAY_FAILED = 'JITO_RELAY_FAILED',
+
+  // 404 — Jito Gas Abstraction
+  JITO_BUNDLE_NOT_FOUND = 'JITO_BUNDLE_NOT_FOUND',
+
+  // 400 — Jito Gas Abstraction
+  JITO_INVALID_TRANSACTION = 'JITO_INVALID_TRANSACTION',
+
   // 503 — Service Unavailable
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
   SOLANA_RPC_UNAVAILABLE = 'SOLANA_RPC_UNAVAILABLE',
@@ -447,6 +456,30 @@ export const ERROR_CATALOG: ErrorCatalogEntry[] = [
     httpStatus: 500,
     description: 'Failed to create agent session.',
     retryable: true,
+  },
+
+  // 500 — Jito Gas Abstraction
+  {
+    code: ErrorCode.JITO_RELAY_FAILED,
+    httpStatus: 500,
+    description: 'Jito bundle relay failed. The block engine may be temporarily unavailable.',
+    retryable: true,
+  },
+
+  // 404 — Jito Gas Abstraction
+  {
+    code: ErrorCode.JITO_BUNDLE_NOT_FOUND,
+    httpStatus: 404,
+    description: 'Jito bundle not found. The bundle ID may be expired or invalid.',
+    retryable: false,
+  },
+
+  // 400 — Jito Gas Abstraction
+  {
+    code: ErrorCode.JITO_INVALID_TRANSACTION,
+    httpStatus: 400,
+    description: 'Invalid transaction data. Transactions must be valid base64-encoded serialized Solana transactions.',
+    retryable: false,
   },
 
   // 503

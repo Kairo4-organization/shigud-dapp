@@ -75,6 +75,40 @@ export function errorHandler(
     return
   }
 
+  // Handle Jito errors
+  if (err.name === 'JitoBundleError') {
+    res.status(500).json({
+      success: false,
+      error: {
+        code: ErrorCode.JITO_RELAY_FAILED,
+        message: err.message,
+      },
+    })
+    return
+  }
+
+  if (err.name === 'JitoBundleNotFoundError') {
+    res.status(404).json({
+      success: false,
+      error: {
+        code: ErrorCode.JITO_BUNDLE_NOT_FOUND,
+        message: err.message,
+      },
+    })
+    return
+  }
+
+  if (err.name === 'JitoInvalidTransactionError') {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: ErrorCode.JITO_INVALID_TRANSACTION,
+        message: err.message,
+      },
+    })
+    return
+  }
+
   // Handle SIP SDK ValidationError
   if (err.name === 'ValidationError' || (err as any).code?.startsWith?.('VALIDATION')) {
     res.status(400).json({
