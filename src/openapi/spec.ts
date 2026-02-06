@@ -1783,6 +1783,119 @@ export const openApiSpec = {
       },
     },
 
+    // ─── Range Proofs (STARK) ────────────────────────────────────────────────
+    '/v1/proofs/range/generate': {
+      post: {
+        summary: 'Generate STARK range proof',
+        description: 'Generates a STARK-based range proof that value >= threshold on a Pedersen commitment without revealing the value. Uses M31 limb decomposition. Currently uses a mock STARK prover — real Murkl integration coming soon.',
+        tags: ['Proofs'],
+        operationId: 'proofsRangeGenerate',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  value: { type: 'string', pattern: '^[0-9]+$', description: 'Value to prove (private, not revealed)' },
+                  threshold: { type: 'string', pattern: '^[0-9]+$', description: 'Minimum threshold (public)' },
+                  blindingFactor: hexString32,
+                  commitment: { type: 'string', pattern: '^0x[0-9a-fA-F]+$', description: 'Optional existing Pedersen commitment. If omitted, one is created from value + blindingFactor.' },
+                },
+                required: ['value', 'threshold', 'blindingFactor'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Range proof generated',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    beta: { type: 'boolean' },
+                    warning: { type: 'string' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        proof: {
+                          type: 'object',
+                          properties: {
+                            type: { type: 'string', enum: ['range'] },
+                            proof: { type: 'string', pattern: '^0x[0-9a-fA-F]+$' },
+                            publicInputs: { type: 'array', items: { type: 'string', pattern: '^0x[0-9a-fA-F]+$' } },
+                          },
+                        },
+                        commitment: { type: 'string', description: 'Pedersen commitment hex' },
+                        metadata: {
+                          type: 'object',
+                          properties: {
+                            prover: { type: 'string', enum: ['mock-stark'] },
+                            decomposition: { type: 'string', enum: ['m31-limbs'] },
+                            limbCount: { type: 'integer' },
+                            security: { type: 'string' },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Validation or proof generation error', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
+
+    '/v1/proofs/range/verify': {
+      post: {
+        summary: 'Verify STARK range proof',
+        description: 'Verifies a previously generated STARK range proof.',
+        tags: ['Proofs'],
+        operationId: 'proofsRangeVerify',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['range'] },
+                  proof: { type: 'string', pattern: '^0x[0-9a-fA-F]+$' },
+                  publicInputs: { type: 'array', items: { type: 'string', pattern: '^0x[0-9a-fA-F]+$' } },
+                },
+                required: ['type', 'proof', 'publicInputs'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Verification result',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: { valid: { type: 'boolean' } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Validation error', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
+
     // ─── C-SPL ──────────────────────────────────────────────────────────────
     '/v1/cspl/wrap': {
       post: {
@@ -1989,7 +2102,7 @@ export const openApiSpec = {
     { name: 'Viewing Key', description: 'Viewing key generation, encryption for disclosure, and decryption' },
     { name: 'Privacy', description: 'Wallet privacy analysis and surveillance scoring' },
     { name: 'RPC', description: 'RPC provider configuration and status' },
-    { name: 'Proofs', description: 'ZK proof generation and verification (funding, validity, fulfillment)' },
+    { name: 'Proofs', description: 'ZK proof generation and verification (funding, validity, fulfillment, range)' },
     { name: 'C-SPL', description: 'Confidential SPL token operations (wrap, unwrap, transfer)' },
   ],
 }
