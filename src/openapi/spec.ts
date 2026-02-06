@@ -2079,6 +2079,92 @@ export const openApiSpec = {
       },
     },
 
+    '/v1/backends/compare': {
+      post: {
+        summary: 'Compare privacy backends',
+        description: 'Compare available privacy backends for a given operation type, returning cost, latency, privacy level, and recommendations.',
+        tags: ['Backends'],
+        operationId: 'backendsCompare',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  operation: {
+                    type: 'string',
+                    enum: ['stealth_privacy', 'encrypted_compute', 'compliance_audit'],
+                    description: 'Type of privacy operation to compare backends for',
+                  },
+                  chain: { type: 'string', description: 'Target blockchain (default: solana)', example: 'solana' },
+                  amount: { type: 'string', pattern: '^[1-9]\\d*$', description: 'Transaction amount in smallest units' },
+                  prioritize: {
+                    type: 'string',
+                    enum: ['cost', 'speed', 'privacy'],
+                    description: 'Factor to prioritize in scoring (adjusts weights to 60%)',
+                  },
+                },
+                required: ['operation'],
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Backend comparison results with recommendations',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        operation: { type: 'string' },
+                        chain: { type: 'string' },
+                        comparisons: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              backend: { type: 'string' },
+                              type: { type: 'string' },
+                              available: { type: 'boolean' },
+                              costLamports: { type: 'number' },
+                              costSOL: { type: 'string' },
+                              latencyMs: { type: 'number' },
+                              latencyCategory: { type: 'string', enum: ['fast', 'medium', 'slow'] },
+                              privacyLevel: { type: 'string' },
+                              capabilities: { type: 'array', items: { type: 'string' } },
+                              score: { type: 'number', minimum: 0, maximum: 100 },
+                              recommended: { type: 'boolean' },
+                            },
+                          },
+                        },
+                        recommendation: {
+                          type: 'object',
+                          properties: {
+                            best_overall: { type: 'string' },
+                            best_value: { type: 'string' },
+                            fastest: { type: 'string' },
+                            most_private: { type: 'string' },
+                            reasoning: { type: 'string' },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Validation error', content: { 'application/json': { schema: errorResponse } } },
+        },
+      },
+    },
+
     // ─── C-SPL ──────────────────────────────────────────────────────────────
     '/v1/cspl/wrap': {
       post: {
