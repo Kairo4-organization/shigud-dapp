@@ -131,6 +131,11 @@ app.get('/', (_req, res) => {
         unwrap: 'POST /v1/cspl/unwrap',
         transfer: 'POST /v1/cspl/transfer',
       },
+      arcium: {
+        compute: 'POST /v1/arcium/compute',
+        status: 'GET /v1/arcium/compute/:id/status',
+        decrypt: 'POST /v1/arcium/decrypt',
+      },
       admin: {
         listKeys: 'GET /v1/admin/keys',
         createKey: 'POST /v1/admin/keys',

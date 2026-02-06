@@ -13,6 +13,7 @@ import proofsRouter from './proofs.js'
 import rangeProofRouter from './range-proof.js'
 import csplRouter from './cspl.js'
 import privateTransferRouter from './private-transfer.js'
+import arciumRouter from './arcium.js'
 import adminRouter from './admin.js'
 
 const router = Router()
@@ -31,6 +32,7 @@ router.use(backendsRouter)
 router.use(proofsRouter)
 router.use(rangeProofRouter)
 router.use(csplRouter)
+router.use(arciumRouter)
 router.use('/admin', adminRouter)
 
 export default router
