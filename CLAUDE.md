@@ -6,7 +6,7 @@
 **Live URL:** https://sipher.sip-protocol.org
 **Tagline:** "Privacy-as-a-Skill for Multi-Chain Agents"
 **Purpose:** REST API + OpenClaw skill enabling any autonomous agent to add transaction privacy via SIP Protocol
-**Stats:** 84 endpoints | 414 tests | 17 chains supported
+**Stats:** 87 endpoints | 437 tests | 17 chains supported
 
 ---
 
@@ -68,7 +68,7 @@
 pnpm install                    # Install dependencies
 pnpm dev                        # Dev server (localhost:5006)
 pnpm build                      # Build for production
-pnpm test -- --run              # Run tests (414 tests, 22 suites)
+pnpm test -- --run              # Run tests (437 tests, 23 suites)
 pnpm typecheck                  # Type check
 pnpm demo                       # Full-flow demo (requires dev server running)
 
@@ -232,6 +232,7 @@ sipher/
 │   │   ├── request-id.ts           # X-Request-Id correlation
 │   │   ├── audit-log.ts            # Structured audit logging (sensitive field redaction)
 │   │   ├── idempotency.ts          # Idempotency-Key header (LRU cache)
+│   │   ├── require-tier.ts          # Enterprise tier gating middleware
 │   │   └── index.ts                # Barrel exports
 │   ├── routes/
 │   │   ├── health.ts               # GET /v1/health (extended), GET /v1/ready
@@ -249,6 +250,7 @@ sipher/
 │   │   ├── arcium.ts               # Arcium MPC (compute, status, decrypt)
 │   │   ├── inco.ts                 # Inco FHE (encrypt, compute, decrypt)
 │   │   ├── private-swap.ts         # Private swap (Jupiter DEX + stealth)
+│   │   ├── compliance.ts           # Compliance (disclose, report, report/:id)
 │   │   └── index.ts                # Route aggregator
 │   ├── services/
 │   │   ├── solana.ts               # Connection manager + RPC latency measurement
@@ -263,6 +265,7 @@ sipher/
 │   │   ├── jupiter-provider.ts    # Jupiter DEX mock provider (quotes, swap transactions)
 │   │   ├── private-swap-builder.ts # Private swap orchestrator (stealth + C-SPL + Jupiter)
 │   │   ├── backend-comparison.ts  # Backend comparison service (scoring, caching, recommendations)
+│   │   ├── compliance-provider.ts # Compliance provider (disclosure, reports, auditor verification)
 │   │   └── backend-registry.ts    # Privacy backend registry singleton (SIPNative + Arcium + Inco)
 │   └── types/
 │       └── api.ts                  # ApiResponse<T>, HealthResponse
@@ -294,7 +297,8 @@ sipher/
 │   ├── arcium.test.ts             # 18 tests (compute, status, decrypt, idempotency, backend)
 │   ├── inco.test.ts               # 20 tests (encrypt, compute, decrypt, idempotency, backend, E2E)
 │   ├── private-swap.test.ts       # 20 tests (happy path, swap details, validation, idempotency, beta, E2E)
-│   └── backend-comparison.test.ts # 23 tests (basic, scoring, prioritize, validation, cache, edge cases)
+│   ├── backend-comparison.test.ts # 23 tests (basic, scoring, prioritize, validation, cache, edge cases)
+│   └── compliance.test.ts         # 23 tests (disclose, report, get, tier gating, auditor verification)
 ├── Dockerfile                      # Multi-stage Alpine
 ├── docker-compose.yml              # name: sipher, port 5006
 ├── .github/workflows/deploy.yml    # GHCR → VPS
@@ -307,7 +311,7 @@ sipher/
 
 ---
 
-## API ENDPOINTS (40 endpoints)
+## API ENDPOINTS (43 endpoints)
 
 All return `ApiResponse<T>`: `{ success, data?, error? }`
 
@@ -354,6 +358,9 @@ All return `ApiResponse<T>`: `{ success, data?, error? }`
 | POST | `/v1/inco/compute` | Compute on encrypted ciphertexts (homomorphic) | Yes | ✓ |
 | POST | `/v1/inco/decrypt` | Decrypt FHE computation result | Yes | — |
 | POST | `/v1/swap/private` | Privacy-preserving token swap via Jupiter DEX (beta) | Yes | ✓ |
+| POST | `/v1/compliance/disclose` | Selective disclosure with scoped viewing key (enterprise) | Yes | ✓ |
+| POST | `/v1/compliance/report` | Generate encrypted audit report for time range (enterprise) | Yes | ✓ |
+| GET | `/v1/compliance/report/:id` | Retrieve generated compliance report (enterprise) | Yes | — |
 
 ### Idempotency
 
@@ -404,6 +411,9 @@ All error codes are centralized in `src/errors/codes.ts` (ErrorCode enum). Full 
 | **400** | INCO_DECRYPT_FAILED |
 | **500** | SWAP_QUOTE_FAILED, PRIVATE_SWAP_FAILED |
 | **400** | SWAP_UNSUPPORTED_TOKEN |
+| **403** | TIER_ACCESS_DENIED |
+| **500** | COMPLIANCE_DISCLOSURE_FAILED, COMPLIANCE_REPORT_FAILED |
+| **404** | COMPLIANCE_REPORT_NOT_FOUND |
 | **503** | SERVICE_UNAVAILABLE, SOLANA_RPC_UNAVAILABLE |
 
 ---
@@ -423,7 +433,7 @@ All error codes are centralized in `src/errors/codes.ts` (ErrorCode enum). Full 
 ## AI GUIDELINES
 
 ### DO:
-- Run `pnpm test -- --run` after code changes (414 tests must pass)
+- Run `pnpm test -- --run` after code changes (437 tests must pass)
 - Run `pnpm typecheck` before committing
 - Use @sip-protocol/sdk for all crypto operations (never roll your own)
 - Keep API responses consistent: `{ success, data?, error? }`
@@ -470,7 +480,7 @@ See [ROADMAP.md](ROADMAP.md) for the full 6-phase roadmap (38 issues across 6 mi
 | 5 | Backend Aggregation | 5 | 🔲 Planned |
 | 6 | Enterprise | 6 | 🔲 Planned |
 
-**Progress:** 31/38 issues complete | 414 tests | 84 endpoints | 17 chains
+**Progress:** 32/38 issues complete | 437 tests | 87 endpoints | 17 chains
 
 **Quick check:** `gh issue list -R sip-protocol/sipher --state open`
 

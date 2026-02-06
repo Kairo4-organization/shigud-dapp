@@ -750,6 +750,57 @@ Mutation endpoints (`/transfer/shield`, `/transfer/claim`, `/transfer/private`, 
 
 ---
 
+### Compliance (Enterprise Only)
+
+Enterprise-tier endpoints for audit-ready selective disclosure and compliance reporting.
+
+#### Selective Disclosure
+
+```
+POST /v1/compliance/disclose
+Content-Type: application/json
+
+{
+  "viewingKey": { "key": "0x...", "path": "m/44/501/0", "hash": "0x..." },
+  "transactionData": { "txHash": "0x...", "amount": "1000000000", "sender": "...", "receiver": "..." },
+  "scope": { "type": "time_range", "startTime": 1700000000000, "endTime": 1700100000000 },
+  "auditorId": "auditor-001",
+  "auditorVerification": { "auditorKeyHash": "0x...", "nonce": "0x..." }
+}
+```
+
+Returns: `disclosureId` (cmp_ prefix), `scopedViewingKeyHash`, `ciphertext`, `nonce`, `scope`, `auditorVerified`, `disclosedAt`
+
+Scope types: `full`, `time_range`, `counterparty`, `amount_threshold`
+
+#### Generate Audit Report
+
+```
+POST /v1/compliance/report
+Content-Type: application/json
+
+{
+  "viewingKey": { "key": "0x...", "path": "m/44/501/0", "hash": "0x..." },
+  "startTime": 1700000000000,
+  "endTime": 1700100000000,
+  "auditorId": "auditor-001",
+  "auditorVerification": { "auditorKeyHash": "0x...", "nonce": "0x..." },
+  "includeCounterparties": true
+}
+```
+
+Returns: `reportId` (rpt_ prefix), `status`, `generatedAt`, `expiresAt` (24h), `summary` (totalTransactions, totalVolume, uniqueCounterparties, encryptedTransactions[]), `encryptedReport`, `reportHash`
+
+#### Retrieve Report
+
+```
+GET /v1/compliance/report/:id
+```
+
+Returns: cached report data (same shape as generation response). Reports expire after 24 hours.
+
+---
+
 ## Agent Workflow Example
 
 ```
@@ -772,8 +823,8 @@ API keys are tiered with different rate limits:
 | Tier | Requests/Hour | Endpoints |
 |------|---------------|-----------|
 | Free | 100 | Basic (stealth, commitment, viewing-key) |
-| Pro | 10,000 | All endpoints |
-| Enterprise | 100,000 | All endpoints |
+| Pro | 10,000 | All endpoints except compliance |
+| Enterprise | 100,000 | All endpoints including compliance |
 
 Rate limit headers are returned on every response:
 - `X-RateLimit-Limit`: Requests allowed per hour
