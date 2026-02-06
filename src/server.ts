@@ -145,6 +145,11 @@ app.get('/', (_req, res) => {
       swap: {
         private: 'POST /v1/swap/private',
       },
+      compliance: {
+        disclose: 'POST /v1/compliance/disclose',
+        report: 'POST /v1/compliance/report',
+        getReport: 'GET /v1/compliance/report/:id',
+      },
       admin: {
         listKeys: 'GET /v1/admin/keys',
         createKey: 'POST /v1/admin/keys',
