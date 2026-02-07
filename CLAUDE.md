@@ -6,7 +6,7 @@
 **Live URL:** https://sipher.sip-protocol.org
 **Tagline:** "Privacy-as-a-Skill for Multi-Chain Agents"
 **Purpose:** REST API + OpenClaw skill enabling any autonomous agent to add transaction privacy via SIP Protocol
-**Stats:** 77 endpoints | 540 tests | 17 chains | 4 client SDKs (TS, Python, Rust, Go)
+**Stats:** 60 endpoints | 540 tests | 17 chains | 4 client SDKs (TS, Python, Rust, Go)
 
 ---
 
@@ -85,6 +85,10 @@ pnpm colosseum posts            # List forum posts
 npx tsx scripts/sipher-agent.ts run        # Run one LLM-powered engagement cycle
 npx tsx scripts/sipher-agent.ts heartbeat  # Continuous LLM loop
 npx tsx scripts/sipher-agent.ts status     # Show agent state + engaged agents
+
+# Privacy Demo Agent (scripts/privacy-demo-agent.ts)
+npx tsx scripts/privacy-demo-agent.ts      # Full 20-step privacy flow (34 endpoints)
+SIPHER_URL=https://sipher.sip-protocol.org npx tsx scripts/privacy-demo-agent.ts  # Against production
 ```
 
 ---
@@ -141,6 +145,7 @@ Two engagement systems available:
 
 **Deadline:** Feb 12, 2026 17:00 UTC
 **Prize Pool:** $100K USDC
+**IMPORTANT:** Votes are for project discovery, NOT final ranking. Winners determined by judge panel. Focus on product quality, not vote count.
 
 ### Current Stats (Feb 5, 2026)
 | Metric | Value |
@@ -221,6 +226,7 @@ sipher/
 │   ├── config.ts                   # envalid env validation
 │   ├── logger.ts                   # pino structured logger
 │   ├── shutdown.ts                 # Graceful shutdown + readiness passthrough
+│   ├── constants.ts                # Shared cache sizes + TTL constants
 │   ├── errors/
 │   │   └── codes.ts                # ErrorCode enum + ERROR_CATALOG
 │   ├── openapi/
@@ -296,7 +302,8 @@ sipher/
 │   ├── export-openapi.ts            # Export static OpenAPI spec to dist/
 │   ├── colosseum.ts                # Template-based engagement (LLM for comments/posts)
 │   ├── sipher-agent.ts             # LLM-powered autonomous agent (ReAct loop)
-│   └── demo-flow.ts                # Full E2E demo (21 endpoints)
+│   ├── privacy-demo-agent.ts      # Privacy demo: 20-step flow, 34 endpoints (judge demo)
+│   └── demo-flow.ts                # Quick-start E2E demo (21 endpoints)
 ├── tests/                          # 540 tests across 34 suites
 │   ├── health.test.ts              # 11 tests (health + ready + root + skill + 404 + reqId)
 │   ├── stealth.test.ts             # 10 tests
@@ -331,6 +338,9 @@ sipher/
 ├── .github/workflows/deploy.yml    # GHCR → VPS
 ├── .github/workflows/generate-sdks.yml # Auto-regenerate SDKs on spec changes
 ├── .env.example
+├── LICENSE                         # MIT
+├── SECURITY.md                     # Vulnerability reporting + security model
+├── CHANGELOG.md                    # Phase 1-6 changelog
 ├── package.json
 ├── tsconfig.json
 ├── tsup.config.ts
@@ -339,7 +349,7 @@ sipher/
 
 ---
 
-## API ENDPOINTS (59 endpoints)
+## API ENDPOINTS (60 endpoints)
 
 All return `ApiResponse<T>`: `{ success, data?, error? }`
 
@@ -538,11 +548,11 @@ See [ROADMAP.md](ROADMAP.md) for the full 6-phase roadmap (38 issues across 6 mi
 | 5 | Backend Aggregation | 5 | ✅ Complete |
 | 6 | Enterprise | 6 | ✅ Complete |
 
-**Progress:** 38/38 issues complete | 540 tests | 77 endpoints | 17 chains | All phases complete
+**Progress:** 38/38 issues complete | 540 tests | 60 endpoints | 17 chains | All phases complete
 
 **Quick check:** `gh issue list -R sip-protocol/sipher --state open`
 
 ---
 
-**Last Updated:** 2026-02-06
-**Status:** Phase 6 Complete | 77 Endpoints | 540 Tests | 17 Chains | Agent #274 Active
+**Last Updated:** 2026-02-07
+**Status:** Phase 6 Complete | 60 Endpoints | 540 Tests | 17 Chains | Agent #274 Active
