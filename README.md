@@ -17,8 +17,8 @@ hidden amounts, and compliance viewing keys across 17 chains.**
 
 *Stealth addresses • Pedersen commitments • Viewing key hierarchies • On-chain Anchor program • 4 client SDKs*
 
-[![Tests](https://img.shields.io/badge/tests-554%20passing-brightgreen)]()
-[![Endpoints](https://img.shields.io/badge/endpoints-70-blue)]()
+[![Tests](https://img.shields.io/badge/tests-566%20passing-brightgreen)]()
+[![Endpoints](https://img.shields.io/badge/endpoints-71-blue)]()
 [![Chains](https://img.shields.io/badge/chains-17-purple)]()
 [![SDKs](https://img.shields.io/badge/SDKs-4-orange)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)]()
@@ -38,6 +38,7 @@ hidden amounts, and compliance viewing keys across 17 chains.**
 - [Live Demo](#-live-demo-no-api-key-required)
 - [The Problem](#-the-problem)
 - [The Solution](#-the-solution)
+- [Trust Model](#-trust-model)
 - [On-Chain Program](#%EF%B8%8F-on-chain-program)
 - [Cryptographic Primitives](#-cryptographic-primitives-real-not-mocked)
 - [Key Features](#-key-features)
@@ -163,7 +164,7 @@ Agent (Claude, LangChain, CrewAI, OpenClaw, etc.)
     ▼  REST API (any language, any framework)
 ┌──────────────────────────────────────────────────────────────────┐
 │                        Sipher API                                │
-│  Express 5 + TypeScript │ 70 endpoints │ Tiered rate limiting    │
+│  Express 5 + TypeScript │ 71 endpoints │ Tiered rate limiting    │
 │                                                                  │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
 │  │  Auth    │ │  Rate    │ │ Idempot- │ │  Audit   │           │
@@ -183,11 +184,36 @@ Agent (Claude, LangChain, CrewAI, OpenClaw, etc.)
 │  • Pedersen      │               │  Config PDA:           │
 │  • XChaCha20     │               │  BVawZk...WZwZ         │
 │  • BIP32 keys    │               │                       │
-│  • Anchor txs    │               │  SunspotVerifier:      │
-│  • ZK proofs     │               │  Noir → Groth16        │
+│  • Anchor txs    │               │  ZK Verifier:          │
+│  • Range proofs  │               │  Sunspot (roadmap)     │
 │  • 17 chains     │               │                       │
 └──────────────────┘               └───────────────────────┘
 ```
+
+---
+
+## 🔐 Trust Model
+
+Agents trusting a REST API with cryptographic material is a real concern. Here's exactly what Sipher sees at each endpoint:
+
+| Endpoint | Server Sees | Server Does NOT See | Trust Level |
+|----------|-------------|---------------------|-------------|
+| `/stealth/generate` | `chain` param | — (keys generated & returned, not stored) | **Low** |
+| `/stealth/derive` | Meta-address public keys | Recipient private keys | **Low** |
+| `/stealth/check` | Both private keys (ephemeral) | — | **High** |
+| `/transfer/shield` | Sender, meta-address, amount | Recipient private keys | **Medium** |
+| `/transfer/claim` | Spending + viewing private keys | — | **Critical** |
+| `/commitment/create` | Plaintext value | — (commitment hides on-chain) | **Medium** |
+| `/viewing-key/disclose` | Viewing key + plaintext tx data | — | **High** |
+| `/viewing-key/decrypt` | Viewing key + ciphertext | — | **High** |
+| `/scan/assets` | Stealth address (public) | Private keys | **Low** |
+
+**Mitigations:**
+
+- **Stateless server** — no keys, private data, or session secrets are persisted. Every request is independent.
+- **Audit log redaction** — all private keys, blinding factors, and viewing keys are automatically redacted (`[REDACTED]`) in structured logs.
+- **Zero-trust alternative** — for maximum security, agents can use [`@sip-protocol/sdk`](https://github.com/sip-protocol/sdk) directly. Same cryptographic primitives, no server involved.
+- **`/transfer/claim` caveat** — this is a convenience endpoint. Production agents should derive stealth keys client-side using the SDK and only submit the resulting transaction.
 
 ---
 
@@ -203,7 +229,7 @@ Sipher's privacy operations are backed by a deployed Solana Anchor program:
 | **Network** | Solana Mainnet-Beta |
 | **Features** | Transfer records (PDA), Pedersen commitments, viewing key hashes |
 | **SDK Function** | `shieldedTransfer()` — builds Anchor instructions with discriminators |
-| **ZK Verifier** | SunspotVerifier — Noir circuits → Groth16 proofs → on-chain verification |
+| **ZK Verifier** | SunspotVerifier — Noir → Groth16 (in SDK, integration roadmap) |
 
 The `transfer/shield` endpoint builds unsigned transactions targeting this program. The SDK's `shieldedTransfer()` constructs the full Anchor instruction with account discriminators, PDA derivation for transfer records, and commitment data embedding.
 
@@ -222,8 +248,7 @@ Every crypto operation uses audited, production-grade libraries:
 | **SHA-256** | `@noble/hashes` | Key hashing, view tags |
 | **Keccak-256** | `@noble/hashes` | Nullifier derivation (governance) |
 | **BIP32/BIP39** | `@scure/bip32` | Hierarchical viewing key derivation |
-| **Groth16 ZK** | SunspotVerifier | On-chain proof verification (Noir circuits) |
-| **STARK Range Proofs** | Custom (M31 limbs) | Prove value >= threshold without revealing value |
+| **STARK Range Proofs** | Custom (M31 field) | Prove value >= threshold without revealing value |
 
 All `@noble/*` and `@scure/*` libraries are by [Paul Miller](https://paulmillr.com/) — independently audited, zero-dependency, used by MetaMask, Ethereum Foundation, and the broader Web3 ecosystem.
 
@@ -262,8 +287,8 @@ Judges reward transparency. Here's exactly what's production and what's interfac
 | Chain-agnostic private transfer | ✅ **Production** | Solana + EVM + NEAR dispatch |
 | Privacy scoring | ✅ **Production** | Multi-factor 0-100 analysis |
 | Anchor program | ✅ **Deployed** | `S1PMFs...` on mainnet with PDA records |
-| SunspotVerifier | ✅ **Implemented** | Noir → Groth16 → Solana verifier (in SDK) |
-| HeliusProvider | ✅ **Implemented** | DAS API integration (in SDK) |
+| SunspotVerifier (Noir → Groth16) | 🔶 Roadmap | Circuit compilation + on-chain verifier (in SDK, not yet integrated) |
+| HeliusProvider | ✅ **Production** | DAS API `getAssetsByOwner` at `/v1/scan/assets` |
 | Payment scanning | ✅ **Production** | Stealth payment detection via viewing keys |
 | Governance voting | ✅ **Production** | Encrypted ballots, nullifiers, homomorphic tally |
 | Backend comparison | ✅ **Production** | Weighted scoring across 3 backends |
@@ -288,7 +313,7 @@ pnpm install
 # Start dev server
 pnpm dev
 
-# Run tests (554 tests, 35 suites)
+# Run tests (566 tests, 36 suites)
 pnpm test -- --run
 
 # Type check
@@ -339,7 +364,7 @@ Sipher is powered by the full SIP Protocol SDK — not a thin wrapper:
 | Module | Description | Status |
 |--------|-------------|--------|
 | `anchor-transfer` | On-chain shielded transfers via Anchor program | ✅ Production |
-| `sunspot-verifier` | Noir → Groth16 ZK proof verification (3 proof types) | ✅ Production |
+| `sunspot-verifier` | Noir → Groth16 ZK proof verification (3 proof types) | 🔶 Roadmap |
 | `privacy-adapter` | Unified orchestrator (transfer, scan, claim) | ✅ Production |
 | `stealth-scanner` | Real-time + historical payment detection | ✅ Production |
 | `providers/helius` | Helius DAS API (asset queries, metadata) | ✅ Production |
@@ -350,7 +375,7 @@ Sipher is powered by the full SIP Protocol SDK — not a thin wrapper:
 
 ---
 
-## 🔌 API Endpoints (70 total)
+## 🔌 API Endpoints (71 total)
 
 **Base URL:** `https://sipher.sip-protocol.org` | **Auth:** `X-API-Key` header | **Docs:** [`/docs`](https://sipher.sip-protocol.org/docs)
 
@@ -361,7 +386,7 @@ All responses follow: `{ success: boolean, data?: T, error?: { code, message, de
 | **Health & Meta** | 5 | `/v1/health`, `/v1/ready`, `/v1/errors`, `/v1/demo`, `/v1/openapi.json` | Status, readiness, error catalog, live demo |
 | **Stealth** | 4 | `/v1/stealth/generate`, `/derive`, `/check`, `/generate/batch` | Multi-chain stealth addresses (17 chains) |
 | **Transfer** | 3 | `/v1/transfer/shield`, `/claim`, `/private` | Shielded SOL/SPL + chain-agnostic private transfer |
-| **Scan** | 2 | `/v1/scan/payments`, `/payments/batch` | Payment detection via viewing keys |
+| **Scan** | 3 | `/v1/scan/payments`, `/payments/batch`, `/assets` | Payment detection + Helius DAS asset queries |
 | **Commitment** | 5 | `/v1/commitment/create`, `/verify`, `/add`, `/subtract`, `/create/batch` | Pedersen commitments (homomorphic math) |
 | **Viewing Key** | 5 | `/v1/viewing-key/generate`, `/derive`, `/verify-hierarchy`, `/disclose`, `/decrypt` | Hierarchical compliance keys + encryption |
 | **Proofs** | 8 | `/v1/proofs/range/*`, `/funding/*`, `/validity/*`, `/fulfillment/*` | STARK range proofs + ZK proof types |
@@ -466,10 +491,10 @@ Each step uses real cryptographic operations: ECDH key agreement, Pedersen commi
      │  idempotency)│ │              │ │  Program:     │
      │              │ │  • Stealth   │ │  S1PMFs...9at │
      │  Optional —  │ │  • Pedersen  │ │               │
-     │  falls back  │ │  • XChaCha20 │ │  Verifier:    │
-     │  to in-memory│ │  • BIP32     │ │  Sunspot      │
-     └──────────────┘ │  • Anchor    │ │  (Groth16)    │
-                      │  • ZK proofs │ │               │
+     │  falls back  │ │  • XChaCha20 │ │  Config PDA:  │
+     │  to in-memory│ │  • BIP32     │ │  BVawZk...wZ  │
+     └──────────────┘ │  • Anchor    │ │               │
+                      │  • 17 chains │ │               │
                       │  • 17 chains │ │  Helius DAS   │
                       └──────────────┘ └──────────────┘
 ```
@@ -517,7 +542,7 @@ CI workflow auto-regenerates SDKs on spec changes (`.github/workflows/generate-s
 
 ---
 
-## 🧪 Test Suite (554 tests, 35 suites)
+## 🧪 Test Suite (566 tests, 36 suites)
 
 | Test File | Tests | What It Covers |
 |-----------|-------|----------------|
@@ -527,6 +552,7 @@ CI workflow auto-regenerates SDKs on spec changes (`.github/workflows/generate-s
 | `transfer-shield.test.ts` | 12 | Shielded transfer building |
 | `transfer-claim.test.ts` | 8 | Stealth key derivation + claim |
 | `scan.test.ts` | 12 | Payment scanning + batch |
+| `scan-assets.test.ts` | 12 | Helius DAS asset queries + fallback |
 | `viewing-key.test.ts` | 10 | Generate, disclose, decrypt |
 | `viewing-key-hierarchy.test.ts` | 11 | BIP32 derive, verify, multi-level |
 | `middleware.test.ts` | 5 | Auth, CORS, rate limiting |
