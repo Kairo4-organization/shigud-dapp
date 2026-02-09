@@ -4,6 +4,13 @@ import { Keypair } from '@solana/web3.js'
 
 vi.mock('@solana/web3.js', async () => {
   const actual = await vi.importActual('@solana/web3.js')
+  const { PublicKey: RealPublicKey } = actual as { PublicKey: typeof import('@solana/web3.js').PublicKey }
+  const configPda = new RealPublicKey('BVawZkppFewygA5nxdrLma4ThKx8Th7bW4KTCkcWTZwZ')
+
+  // Build a mock config account: 51 bytes with total_transfers (u64 LE) at offset 43
+  const configData = Buffer.alloc(51)
+  configData[43] = 10 // total_transfers = 10
+
   return {
     ...actual as object,
     Connection: vi.fn().mockImplementation(() => ({
@@ -13,7 +20,17 @@ vi.mock('@solana/web3.js', async () => {
         blockhash: '4uQeVj5tqViQh7yWWGStvkEG1Zmhx6uasJtWCJziofM',
         lastValidBlockHeight: 300000100,
       }),
-      getAccountInfo: vi.fn().mockResolvedValue(null),
+      getAccountInfo: vi.fn().mockImplementation((pubkey: import('@solana/web3.js').PublicKey) => {
+        if (pubkey.equals(configPda)) {
+          return Promise.resolve({
+            data: configData,
+            executable: false,
+            lamports: 1_000_000,
+            owner: new RealPublicKey('S1PMFspo4W6BYKHWkHNF7kZ3fnqibEXg3LQjxepS9at'),
+          })
+        }
+        return Promise.resolve(null)
+      }),
     })),
   }
 })
