@@ -1,0 +1,32 @@
+{
+  "name": "@sip-protocol/plugin-eliza",
+  "version": "0.1.0",
+  "description": "Eliza plugin for Sipher — Privacy-as-a-Skill for AI agents",
+  "author": "SIP Protocol <hello@sip-protocol.org>",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sip-protocol/sipher.git",
+    "directory": "integrations/eliza"
+  },
+  "keywords": [
+    "eliza",
+    "elizaos",
+    "sip-protocol",
+    "sipher",
+    "privacy",
+    "stealth-addresses",
+    "solana",
+    "ai-agents"
+  ],
+  "peerDependencies": {
+    "@elizaos/core": ">=0.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@elizaos/core": {
+      "optional": true
+    }
+  }
+}
