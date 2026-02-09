@@ -6,7 +6,7 @@
 **Live URL:** https://sipher.sip-protocol.org
 **Tagline:** "Privacy-as-a-Skill for Multi-Chain Agents"
 **Purpose:** REST API + OpenClaw skill enabling any autonomous agent to add transaction privacy via SIP Protocol
-**Stats:** 71 endpoints | 568 tests | 17 chains | 4 client SDKs (TS, Python, Rust, Go)
+**Stats:** 71 endpoints | 568 tests | 17 chains | 4 client SDKs (TS, Python, Rust, Go) | Eliza plugin
 
 ---
 
@@ -300,11 +300,28 @@ sipher/
 │   ├── python/                      # Generated (urllib3)
 │   ├── rust/                        # Generated (reqwest, async)
 │   └── go/                          # Generated (net/http)
+├── integrations/
+│   └── eliza/                       # @sip-protocol/plugin-eliza (Eliza agent framework)
+│       ├── package.json             # Plugin package (peerDep: @elizaos/core)
+│       ├── tsconfig.json
+│       ├── README.md
+│       └── src/
+│           ├── index.ts             # Plugin export (sipherPlugin)
+│           ├── client.ts            # SipherClient + createClient factory
+│           ├── actions/             # 5 privacy actions
+│           │   ├── stealthGenerate  # Stealth keypair generation
+│           │   ├── transferShield   # Shielded transfer building
+│           │   ├── scanPayments     # Payment detection
+│           │   ├── privacyScore     # Wallet privacy analysis
+│           │   └── commitmentCreate # Pedersen commitments
+│           └── providers/
+│               └── sipherStatus     # Health/status context provider
 ├── scripts/
 │   ├── export-openapi.ts            # Export static OpenAPI spec to dist/
 │   ├── colosseum.ts                # Template-based engagement (LLM for comments/posts)
 │   ├── sipher-agent.ts             # LLM-powered autonomous agent (ReAct loop)
 │   ├── privacy-demo-agent.ts      # Privacy demo: 20-step flow, 34 endpoints (judge demo)
+│   ├── eliza-plugin-demo.ts       # Eliza plugin demo (5 actions, no runtime needed)
 │   └── demo-flow.ts                # Quick-start E2E demo (21 endpoints)
 ├── tests/                          # 568 tests across 36 suites
 │   ├── health.test.ts              # 11 tests (health + ready + root + skill + 404 + reqId)
