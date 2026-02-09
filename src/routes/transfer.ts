@@ -10,7 +10,7 @@ import { commit } from '@sip-protocol/sdk'
 import type { StealthMetaAddress, StealthAddress, HexString } from '@sip-protocol/types'
 import { validateRequest } from '../middleware/validation.js'
 import { idempotency } from '../middleware/idempotency.js'
-import { buildShieldedSolTransfer, buildShieldedSplTransfer } from '../services/transaction-builder.js'
+import { buildShieldedSolTransfer, buildShieldedSplTransfer, buildAnchorShieldedSolTransfer } from '../services/transaction-builder.js'
 import { getConnection } from '../services/solana.js'
 import { sha256 } from '@noble/hashes/sha256'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
@@ -75,8 +75,12 @@ router.post(
       const viewingKeyBytes = hexToBytes(recipientMetaAddress.viewingKey.slice(2))
       const viewingKeyHash = `0x${bytesToHex(sha256(viewingKeyBytes))}`
 
-      // Build unsigned transaction
+      // Build unsigned transaction — try Anchor program, fall back to SystemProgram
       let transaction: string
+      let noteId: string | null = null
+      let instructionType: 'anchor' | 'system' = 'system'
+      let encryptedAmount: string | null = null
+
       if (mint) {
         transaction = await buildShieldedSplTransfer({
           sender,
@@ -85,11 +89,28 @@ router.post(
           amount: amountBigInt,
         })
       } else {
-        transaction = await buildShieldedSolTransfer({
-          sender,
-          stealthAddress: stealthSolanaAddr,
-          amount: amountBigInt,
-        })
+        try {
+          const anchorResult = await buildAnchorShieldedSolTransfer({
+            sender,
+            stealthAddress: stealthSolanaAddr,
+            amount: amountBigInt,
+            commitment,
+            blindingFactor: blinding,
+            ephemeralPublicKey: stealthResult.stealthAddress.ephemeralPublicKey,
+            viewingKeyHash,
+          })
+          transaction = anchorResult.transaction
+          noteId = anchorResult.noteId
+          instructionType = 'anchor'
+          encryptedAmount = anchorResult.encryptedAmount
+        } catch {
+          // Fallback to SystemProgram when Anchor program unavailable
+          transaction = await buildShieldedSolTransfer({
+            sender,
+            stealthAddress: stealthSolanaAddr,
+            amount: amountBigInt,
+          })
+        }
       }
 
       res.json({
@@ -103,11 +124,10 @@ router.post(
           blindingFactor: blinding,
           viewingKeyHash,
           sharedSecret: stealthResult.sharedSecret,
-          onChainProgram: {
-            programId: 'S1PMFspo4W6BYKHWkHNF7kZ3fnqibEXg3LQjxepS9at',
-            anchorFunction: 'shieldedTransfer()',
-            note: 'SDK provides Anchor program path with PDA transfer records. This endpoint returns SystemProgram.transfer for client-side signing simplicity.',
-          },
+          programId: 'S1PMFspo4W6BYKHWkHNF7kZ3fnqibEXg3LQjxepS9at',
+          noteId,
+          instructionType,
+          ...(encryptedAmount ? { encryptedAmount } : {}),
         },
       })
     } catch (err) {

@@ -9,7 +9,7 @@ import {
 import type { StealthMetaAddress, HexString, ChainId } from '@sip-protocol/types'
 import { sha256 } from '@noble/hashes/sha256'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
-import { buildShieldedSolTransfer, buildShieldedSplTransfer } from './transaction-builder.js'
+import { buildShieldedSolTransfer, buildShieldedSplTransfer, buildAnchorShieldedSolTransfer } from './transaction-builder.js'
 
 // ─── Supported Transfer Chains ──────────────────────────────────────────────
 
@@ -33,6 +33,9 @@ export interface SolanaTransferData {
   type: 'solana'
   transaction: string // base64 unsigned
   mint?: string
+  noteId?: string
+  instructionType?: 'anchor' | 'system'
+  encryptedAmount?: string
 }
 
 export interface EvmTransferData {
@@ -80,6 +83,8 @@ export interface PrivateTransferResult {
   viewingKeyHash: string
   sharedSecret: string
   chainData: ChainTransferData
+  noteId?: string
+  instructionType?: 'anchor' | 'system'
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────
@@ -120,9 +125,19 @@ export async function buildPrivateTransfer(req: PrivateTransferRequest): Promise
   let chainData: ChainTransferData
   let nativeAddress: string
 
+  let noteId: string | undefined
+  let instructionType: 'anchor' | 'system' | undefined
+
   if (chain === 'solana') {
     nativeAddress = ed25519PublicKeyToSolanaAddress(stealthResult.stealthAddress.address)
-    chainData = await buildSolanaTransfer(sender, nativeAddress, amountBigInt, token)
+    chainData = await buildSolanaTransfer(sender, nativeAddress, amountBigInt, token, {
+      commitment,
+      blindingFactor: blinding,
+      ephemeralPublicKey: stealthResult.stealthAddress.ephemeralPublicKey,
+      viewingKeyHash,
+    })
+    if (chainData.noteId) noteId = chainData.noteId
+    instructionType = chainData.instructionType
   } else if (EVM_CHAINS.has(chain)) {
     nativeAddress = publicKeyToEthAddress(stealthResult.stealthAddress.address)
     chainData = buildEvmTransfer(nativeAddress, amount, chain, token)
@@ -144,24 +159,67 @@ export async function buildPrivateTransfer(req: PrivateTransferRequest): Promise
     viewingKeyHash,
     sharedSecret: stealthResult.sharedSecret,
     chainData,
+    ...(noteId ? { noteId } : {}),
+    ...(instructionType ? { instructionType } : {}),
   }
 }
 
 // ─── Chain-Specific Builders ────────────────────────────────────────────────
+
+interface AnchorPipeParams {
+  commitment: string
+  blindingFactor: string
+  ephemeralPublicKey: string
+  viewingKeyHash: string
+}
 
 async function buildSolanaTransfer(
   sender: string,
   stealthAddress: string,
   amount: bigint,
   mint?: string,
+  anchorParams?: AnchorPipeParams,
 ): Promise<SolanaTransferData> {
   let transaction: string
+  let noteId: string | undefined
+  let instructionType: 'anchor' | 'system' = 'system'
+  let encryptedAmount: string | undefined
+
   if (mint) {
     transaction = await buildShieldedSplTransfer({ sender, stealthAddress, mint, amount })
   } else {
-    transaction = await buildShieldedSolTransfer({ sender, stealthAddress, amount })
+    // Try Anchor program path for native SOL
+    if (anchorParams) {
+      try {
+        const anchorResult = await buildAnchorShieldedSolTransfer({
+          sender,
+          stealthAddress,
+          amount,
+          commitment: anchorParams.commitment,
+          blindingFactor: anchorParams.blindingFactor,
+          ephemeralPublicKey: anchorParams.ephemeralPublicKey,
+          viewingKeyHash: anchorParams.viewingKeyHash,
+        })
+        transaction = anchorResult.transaction
+        noteId = anchorResult.noteId
+        instructionType = 'anchor'
+        encryptedAmount = anchorResult.encryptedAmount
+      } catch {
+        transaction = await buildShieldedSolTransfer({ sender, stealthAddress, amount })
+      }
+    } else {
+      transaction = await buildShieldedSolTransfer({ sender, stealthAddress, amount })
+    }
   }
-  return { type: 'solana', transaction, ...(mint ? { mint } : {}) }
+
+  return {
+    type: 'solana',
+    transaction,
+    ...(mint ? { mint } : {}),
+    ...(noteId ? { noteId } : {}),
+    instructionType,
+    ...(encryptedAmount ? { encryptedAmount } : {}),
+  }
 }
 
 function buildEvmTransfer(
