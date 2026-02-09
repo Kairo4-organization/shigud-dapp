@@ -19,6 +19,8 @@
     "clean": "rm -rf dist",
     "colosseum": "tsx scripts/colosseum.ts",
     "demo": "tsx scripts/demo-flow.ts",
+    "gm": "bash scripts/gm.sh",
+    "thanks": "bash scripts/thanks.sh",
     "openapi:export": "tsx scripts/export-openapi.ts",
     "sdks:generate": "bash sdks/generator/generate.sh"
   },
