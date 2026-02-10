@@ -144,8 +144,8 @@ echo -e "  ${WHITE}2b. Execute real transfer (0.01 SOL → stealth address)${RES
 echo -e "     ${DIM}\$${RESET} ${GREEN}pnpm devnet-demo${RESET}"
 echo ""
 sleep 0.05
-echo -e "  ${WHITE}2c. Previous proof (already confirmed on-chain)${RESET}"
-echo -e "     ${DIM}\$${RESET} ${GREEN}open \"https://solscan.io/tx/4FmLGsLkC5DYJojpQeSQoGMArsJonTEnx729gnFCeYEjFsr8Z46VrDzKQXLhFrpM9Uj6ezBtCQckU28odzvjvV4a?cluster=devnet\"${RESET}"
+echo -e "  ${WHITE}2c. Verify on Solscan (copy tx hash from 2b output)${RESET}"
+echo -e "     ${DIM}\$${RESET} ${GREEN}open \"https://solscan.io/tx/<TX_HASH_FROM_2b>?cluster=devnet\"${RESET}"
 echo ""
 sleep 0.3
 
