@@ -32,6 +32,14 @@ hidden amounts, and compliance viewing keys across 17 chains.**
 
 ---
 
+<div align="center">
+
+https://github.com/user-attachments/assets/a4a87b0c-7168-4677-b8e6-457debb98cb0
+
+</div>
+
+---
+
 ## Table of Contents
 
 - [The Problem](#-the-problem)
@@ -208,12 +216,6 @@ curl -s https://sipher.sip-protocol.org/v1/demo | jq '.data.summary'
 ---
 
 ## 🎥 Live Demo (No API Key Required)
-
-<div align="center">
-
-https://github.com/user-attachments/assets/a4a87b0c-7168-4677-b8e6-457debb98cb0
-
-</div>
 
 25 real cryptographic operations executing live — no mocks, no fakes:
 
