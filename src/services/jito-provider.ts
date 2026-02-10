@@ -92,6 +92,8 @@ function getStatus(elapsed: number): { status: BundleStatus; progress: number } 
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+let mockSeq = 0
+
 function domainHash(label: string, data: string): string {
   const payload = new TextEncoder().encode(label + data)
   const input = new Uint8Array(DOMAIN_TAG.length + payload.length)
@@ -271,7 +273,7 @@ function mockSubmitBundle(params: SubmitBundleParams): SubmitBundleResult {
   const { transactions, tipLamports = '10000', gasSponsorship = false } = params
 
   const now = Date.now()
-  const bundleId = 'jito_' + domainHash('BUNDLE', transactions.join('') + now.toString())
+  const bundleId = 'jito_' + domainHash('BUNDLE', transactions.join('') + now.toString() + (++mockSeq).toString())
   const tipAccount = getRandomTipAccount()
   const signature = domainHash('SIG', bundleId)
   const slotHash = domainHash('SLOT', bundleId)
