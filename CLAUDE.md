@@ -148,9 +148,10 @@ Two engagement systems available:
 
 ## COLOSSEUM HACKATHON STATUS
 
-**Deadline:** Feb 12, 2026 17:00 UTC
+**Deadline:** Feb 13, 2026 12:00 ET (extended from Feb 12)
 **Prize Pool:** $100K USDC
 **IMPORTANT:** Votes are for project discovery, NOT final ranking. Winners determined by judge panel. Focus on product quality, not vote count.
+**Submission:** All v1.8.0 fields updated (Feb 12) — problemStatement, technicalApproach, targetAudience, businessModel, competitiveLandscape, futureVision, refreshed description + solanaIntegration, liveAppLink → /v1/demo, presentationLink → MP4.
 
 ### Current Stats (Feb 5, 2026)
 | Metric | Value |
