@@ -4,7 +4,7 @@ import GudFundSection from '../components/features/gudfund/GudFundSection';
 import LaunchCountdown from '../components/common/LaunchCountdown';
 
 const HomePage: React.FC = () => {
-  const [setCurrentTokenSymbol] = useState<string | null>('');
+  const [currentTokenSymbol, setCurrentTokenSymbol] = useState<string | null>('');
 
   const handleSymbolLoaded = (symbol: string | null) => {
     setCurrentTokenSymbol(symbol);
