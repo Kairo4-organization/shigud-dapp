@@ -1,6 +1,0 @@
-{
-  "packageName": "sipher-client",
-  "packageVersion": "0.1.0",
-  "library": "reqwest",
-  "supportAsync": true
-}
