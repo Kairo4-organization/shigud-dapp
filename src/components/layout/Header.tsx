@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Globe, Calculator, Menu, X, MessageCircleQuestion, FileText, Flame } from 'lucide-react';
+import { Globe, Menu, X} from 'lucide-react';
 import CustomConnectButton from '../common/CustomConnectButton';
 
 const Header: React.FC = () => {
