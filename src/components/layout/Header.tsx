@@ -28,7 +28,6 @@ const Header: React.FC = () => {
           <div className="hidden lg:block">
             <CustomConnectButton />
           </div>
-
           {/* Mobile Controls */}
           <div className="lg:hidden flex items-center">
             <CustomConnectButton isMobile={true} />
@@ -53,7 +52,6 @@ const Header: React.FC = () => {
         `}
       >
         <div className={`p-4 transition-opacity duration-500 ease-in-out ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}>
-          {/* Menu Items Area */}
         </div>
       </div>
     </header>
