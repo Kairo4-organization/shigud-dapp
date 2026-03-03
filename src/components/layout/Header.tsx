@@ -29,10 +29,31 @@ const Header: React.FC = () => {
             <CustomConnectButton />
           </div>
           {/* Mobile Controls */}
+          <div className="lg:hidden flex items-center">
+            <CustomConnectButton isMobile={true} />
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+              className="sm:ml-2 p-2 rounded-md text-gray-100 focus:outline-none"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Mobile Menu Dropdown */}
+      <div
+        className={`
+          lg:hidden absolute top-full left-0 right-0 z-40 w-full shadow-lg
+          bg-[#1a1a2e]/90 overflow-hidden
+          transition-all duration-500 ease-in-out
+          ${isMobileMenuOpen ? 'max-h-[calc(100vh-64px)]' : 'max-h-0'}
+        `}
+      >
+        <div className={`p-4 transition-opacity duration-500 ease-in-out ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}>
+        </div>
+      </div>
     </header>
   );
 };
