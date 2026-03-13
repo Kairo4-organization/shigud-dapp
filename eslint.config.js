@@ -38,11 +38,6 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
     },
-    settings: {
-      react: {
-        version: "detect",
-      },
-    }
   },
   {
     ignores: ["dist/", "node_modules/", ".DS_Store", "*.log"],

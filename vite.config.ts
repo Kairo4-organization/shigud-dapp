@@ -18,26 +18,3 @@ const getGitCommitSHA = () => {
   }
 };
 
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-    tsconfigPaths(),
-  ],
-  define: {
-    'import.meta.env.VITE_COMMIT_SHA': JSON.stringify(getGitCommitSHA()),
-    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(new Date().toISOString()),
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: 'globalThis',
-      },
-    },
-  },
-  resolve: {
-    alias: {
-      buffer: 'buffer/',
-    },
-  },
-});
