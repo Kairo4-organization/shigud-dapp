@@ -118,12 +118,6 @@ const Ktv2Actions: React.FC<Ktv2ActionsProps> = ({
                     <h3 className="text-xl md:text-2xl font-semibold text-white">
                         {isLoadingTokenData ? 'Loading...' : <a href={getBlockExplorerUrl(erc20TokenAddress)} target="_blank" rel="noopener noreferrer" className="hover:text-pink-500" title={`View ${displayedName} on block explorer`}>{`${displayedName} (${displayedSymbol})`}</a>}
                     </h3>
-                    <div className="flex items-baseline space-x-2 text-sm text-gray-400">
-                        <span className="font-medium text-orange-500">Burn Bank:</span>
-                        <span className="font-mono text-xs">{`${ktv2ContractAddress.substring(0, 6)}...${ktv2ContractAddress.substring(ktv2ContractAddress.length - 4)}`}</span>
-                        <button onClick={() => copyToClipboard(ktv2ContractAddress)} title="Copy address" className="cursor-pointer hover:text-pink-500"><Copy size={13} /></button>
-                        <a href={getBlockExplorerUrl(ktv2ContractAddress)} target="_blank" rel="noopener noreferrer" title="View on explorer" className="cursor-pointer hover:text-pink-500"><ExternalLink size={13} /></a>
-                    </div>
                 </div>
             </div>
 
@@ -171,15 +165,6 @@ const Ktv2Actions: React.FC<Ktv2ActionsProps> = ({
             />
 
             {/* Donate Section */}
-            <DonateSection
-                ktv2ContractAddress={ktv2ContractAddress}
-                targetChainId={targetChainId}
-                nativeCurrencySymbol={nativeCurrencySymbol}
-                userNativeBalance={nativeBalanceData?.value}
-                nativeDecimals={nativeBalanceData?.decimals}
-                isConnected={isConnected}
-                refetchNativeBalance={refetchNativeBalance}
-            />
         </div>
     );
 };
