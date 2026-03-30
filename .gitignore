@@ -32,5 +32,5 @@ dist-ssr
 *.tsbuildinfo
 
 # Environment variables
-.env
+#.env
 .env*.local
