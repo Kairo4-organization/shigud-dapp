@@ -1,5 +1,0 @@
-export enum ContractSourceMode {
-  FETCHED_ONLY = 'FETCHED_ONLY',
-  HARDCODED_ONLY = 'HARDCODED_ONLY',
-  BOTH_MERGED = 'BOTH_MERGED',
-} 
